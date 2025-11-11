@@ -26,6 +26,7 @@ struct SignInContent: View {
                 Columns(label: "Email", iconName: "EmailIcon")
                 Columns(label: "Password", iconName: "PasswordIcon")
                 
+            
                 CustomButton(title: "Sign In")
                 
                 // "Don't have an account yet? Create one here"
