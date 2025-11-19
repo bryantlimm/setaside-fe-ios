@@ -27,8 +27,8 @@ struct SearchBar: View {
             Button(action: {}) {
                 Image("filter")
                     .resizable()
-                    .frame(width: 24, height: 24)
-                    .padding(12)
+                    .scaledToFit()
+                    .frame(width: 16, height: 16)  
                     .background(Color(red: 0.38, green: 0.51, blue: 0.39))
                     .cornerRadius(12)
             }
