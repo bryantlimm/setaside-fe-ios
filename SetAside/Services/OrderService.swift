@@ -48,6 +48,18 @@ class OrderService {
         return response.allOrders
     }
     
+    /// Get all orders (Staff only - returns all orders in the system)
+    func getAllOrders(page: Int = 1, limit: Int = 100) async throws -> [Order] {
+        let endpoint = "/orders?page=\(page)&limit=\(limit)"
+        
+        let response: OrdersResponse = try await networkManager.request(
+            endpoint: endpoint,
+            method: "GET"
+        )
+        
+        return response.allOrders
+    }
+    
     /// Get a specific order by ID
     func getOrder(id: String) async throws -> Order {
         return try await networkManager.request(

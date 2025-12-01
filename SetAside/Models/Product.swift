@@ -40,16 +40,20 @@ struct Product: Codable, Identifiable, Hashable {
 }
 
 struct ProductsResponse: Codable {
+    let data: [Product]?
     let products: [Product]?
     let items: [Product]?
+    let meta: ProductsMeta?
     let total: Int?
     let page: Int?
     let limit: Int?
     let totalPages: Int?
     
     enum CodingKeys: String, CodingKey {
+        case data
         case products
         case items
+        case meta
         case total
         case page
         case limit
@@ -57,8 +61,15 @@ struct ProductsResponse: Codable {
     }
     
     var allProducts: [Product] {
-        return products ?? items ?? []
+        return data ?? products ?? items ?? []
     }
+}
+
+struct ProductsMeta: Codable {
+    let total: Int?
+    let page: Int?
+    let limit: Int?
+    let totalPages: Int?
 }
 
 struct CategoriesResponse: Codable {
@@ -76,6 +87,7 @@ struct CreateProductRequest: Codable {
     let category: String
     let isAvailable: Bool
     let stockQuantity: Int?
+    let imageUrl: String?
     
     enum CodingKeys: String, CodingKey {
         case name
@@ -84,5 +96,6 @@ struct CreateProductRequest: Codable {
         case category
         case isAvailable = "is_available"
         case stockQuantity = "stock_quantity"
+        case imageUrl = "image_url"
     }
 }

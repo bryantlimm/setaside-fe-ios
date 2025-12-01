@@ -40,15 +40,29 @@ class ProductService {
         return response.allProducts
     }
     
+    /// Get all products for admin (include all regardless of availability)
+    func getAllProductsAdmin(page: Int = 1, limit: Int = 100) async throws -> [Product] {
+        let endpoint = "/products?page=\(page)&limit=\(limit)"
+        
+        let response: ProductsResponse = try await networkManager.request(
+            endpoint: endpoint,
+            method: "GET",
+            requiresAuth: true
+        )
+        
+        return response.allProducts
+    }
+    
     /// Get all product categories
     func getCategories() async throws -> [String] {
-        let response: CategoriesResponse = try await networkManager.request(
+        // API returns plain array of strings
+        let categories: [String] = try await networkManager.request(
             endpoint: "/products/categories",
             method: "GET",
             requiresAuth: false
         )
         
-        return response.allCategories
+        return categories
     }
     
     /// Get a specific product by ID

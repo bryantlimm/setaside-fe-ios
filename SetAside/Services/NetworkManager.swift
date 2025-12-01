@@ -78,11 +78,25 @@ class NetworkManager {
             requiresAuth: requiresAuth
         )
         
+        #if DEBUG
+        print("🌐 API Request: \(method) \(baseURL)\(endpoint)")
+        if let bodyData = bodyData, let bodyString = String(data: bodyData, encoding: .utf8) {
+            print("📤 Request Body: \(bodyString)")
+        }
+        #endif
+        
         let (data, response) = try await session.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
+        
+        #if DEBUG
+        print("📥 Response Status: \(httpResponse.statusCode)")
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("📥 Response Body: \(responseString.prefix(500))")
+        }
+        #endif
         
         switch httpResponse.statusCode {
         case 200...299:
@@ -90,6 +104,9 @@ class NetworkManager {
             do {
                 return try decoder.decode(T.self, from: data)
             } catch {
+                #if DEBUG
+                print("❌ Decoding Error: \(error)")
+                #endif
                 throw APIError.decodingError(error)
             }
         case 401:

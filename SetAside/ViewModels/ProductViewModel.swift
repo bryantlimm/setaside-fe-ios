@@ -53,6 +53,10 @@ class ProductViewModel: ObservableObject {
                 search: searchText.isEmpty ? nil : searchText
             )
             
+            #if DEBUG
+            print("✅ Fetched \(fetchedProducts.count) products for page \(currentPage)")
+            #endif
+            
             if refresh {
                 products = fetchedProducts
             } else {
@@ -65,9 +69,15 @@ class ProductViewModel: ObservableObject {
         } catch let error as APIError {
             errorMessage = error.errorDescription
             showError = true
+            #if DEBUG
+            print("❌ API Error fetching products: \(error.errorDescription ?? "unknown")")
+            #endif
         } catch {
             errorMessage = error.localizedDescription
             showError = true
+            #if DEBUG
+            print("❌ Error fetching products: \(error.localizedDescription)")
+            #endif
         }
         
         isLoading = false
