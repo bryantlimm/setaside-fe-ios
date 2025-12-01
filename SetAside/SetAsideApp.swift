@@ -9,9 +9,14 @@ import SwiftUI
 
 @main
 struct SetAsideApp: App {
+    @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var cartViewModel = CartViewModel()
+    
     var body: some Scene {
         WindowGroup {
-            MainView()
+            RootView()
+                .environmentObject(authViewModel)
+                .environmentObject(cartViewModel)
         }
     }
 }
