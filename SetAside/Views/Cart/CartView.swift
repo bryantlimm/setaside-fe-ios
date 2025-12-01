@@ -100,9 +100,10 @@ struct CartView: View {
                                 .cornerRadius(12)
                         }
                         .padding(.horizontal)
-                        .padding(.bottom, 16)
+                        .padding(.bottom, 40) // Extra padding for safe area
                     }
                     .background(Color.white)
+                    .ignoresSafeArea(edges: .bottom)
                     .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: -4)
                 }
             }

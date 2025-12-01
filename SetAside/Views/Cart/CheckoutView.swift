@@ -200,9 +200,10 @@ struct CheckoutView: View {
                     .disabled(cartViewModel.isLoading)
                     .padding(.horizontal)
                     .padding(.top, 16)
-                    .padding(.bottom, 16)
+                    .padding(.bottom, 40) // Extra padding for safe area
                 }
                 .background(Color.white)
+                .ignoresSafeArea(edges: .bottom)
             }
         }
         .navigationBarTitleDisplayMode(.inline)

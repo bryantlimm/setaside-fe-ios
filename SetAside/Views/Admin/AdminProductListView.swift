@@ -174,7 +174,7 @@ struct AdminProductRow: View {
                     .lineLimit(1)
                 
                 HStack(spacing: 8) {
-                    Text(product.category)
+                    Text(product.category ?? "Uncategorized")
                         .font(.caption)
                         .foregroundColor(.white)
                         .padding(.horizontal, 8)
@@ -185,11 +185,11 @@ struct AdminProductRow: View {
                     // Availability Badge
                     HStack(spacing: 4) {
                         Circle()
-                            .fill(product.isAvailable ? Color.green : Color.red)
+                            .fill((product.isAvailable ?? true) ? Color.green : Color.red)
                             .frame(width: 6, height: 6)
-                        Text(product.isAvailable ? "Available" : "Unavailable")
+                        Text((product.isAvailable ?? true) ? "Available" : "Unavailable")
                             .font(.caption2)
-                            .foregroundColor(product.isAvailable ? .green : .red)
+                            .foregroundColor((product.isAvailable ?? true) ? .green : .red)
                     }
                 }
                 

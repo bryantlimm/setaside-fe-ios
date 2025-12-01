@@ -57,7 +57,7 @@ struct ProductDetailView: View {
                                     .font(.title2)
                                     .fontWeight(.bold)
                                 
-                                Text(product.category)
+                                Text(product.category ?? "Uncategorized")
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
                             }
@@ -72,12 +72,12 @@ struct ProductDetailView: View {
                         
                         // Availability
                         HStack {
-                            Image(systemName: product.isAvailable ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                .foregroundColor(product.isAvailable ? .green : .red)
+                            Image(systemName: (product.isAvailable ?? true) ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                .foregroundColor((product.isAvailable ?? true) ? .green : .red)
                             
-                            Text(product.isAvailable ? "In Stock" : "Out of Stock")
+                            Text((product.isAvailable ?? true) ? "In Stock" : "Out of Stock")
                                 .font(.subheadline)
-                                .foregroundColor(product.isAvailable ? .green : .red)
+                                .foregroundColor((product.isAvailable ?? true) ? .green : .red)
                             
                             if let stock = product.stockQuantity {
                                 Text("(\(stock) available)")
@@ -197,7 +197,7 @@ struct ProductDetailView: View {
                             )
                             .cornerRadius(12)
                         }
-                        .disabled(!product.isAvailable)
+                        .disabled(!(product.isAvailable ?? true))
                         
                         // Buy Now Button
                         Button(action: {
@@ -216,10 +216,10 @@ struct ProductDetailView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(product.isAvailable ? Color.primaryGreen : Color.gray)
+                            .background((product.isAvailable ?? true) ? Color.primaryGreen : Color.gray)
                             .cornerRadius(12)
                         }
-                        .disabled(!product.isAvailable)
+                        .disabled(!(product.isAvailable ?? true))
                     }
                 }
                 .padding()

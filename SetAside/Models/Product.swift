@@ -10,8 +10,8 @@ struct Product: Codable, Identifiable, Hashable {
     let name: String
     let description: String?
     let price: Double
-    let category: String
-    let isAvailable: Bool
+    let category: String?
+    let isAvailable: Bool?
     let stockQuantity: Int?
     let imageUrl: String?
     let createdAt: String?
@@ -28,6 +28,38 @@ struct Product: Codable, Identifiable, Hashable {
         case imageUrl = "image_url"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(String.self, forKey: .id)
+        name = (try? container.decode(String.self, forKey: .name)) ?? "Unknown Product"
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        price = (try? container.decode(Double.self, forKey: .price)) ?? 0.0
+        category = try container.decodeIfPresent(String.self, forKey: .category)
+        isAvailable = try container.decodeIfPresent(Bool.self, forKey: .isAvailable)
+        stockQuantity = try container.decodeIfPresent(Int.self, forKey: .stockQuantity)
+        imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+        
+        #if DEBUG
+        print("📦 Decoded Product: id=\(id), name=\(name), price=\(price)")
+        #endif
+    }
+    
+    init(id: String, name: String, description: String?, price: Double, category: String?, isAvailable: Bool?, stockQuantity: Int?, imageUrl: String?, createdAt: String?, updatedAt: String?) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.price = price
+        self.category = category
+        self.isAvailable = isAvailable
+        self.stockQuantity = stockQuantity
+        self.imageUrl = imageUrl
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
     }
     
     func hash(into hasher: inout Hasher) {

@@ -13,9 +13,16 @@ struct OrderDetailView: View {
     @State private var isEditing = false
     @State private var editedNotes: String = ""
     @State private var editedPickupTime: Date = Date()
+    @State private var detailedOrder: Order?
+    @State private var isLoadingDetails = false
+    
+    // Use detailed order if available, otherwise fall back to passed order
+    private var displayOrder: Order {
+        detailedOrder ?? order
+    }
     
     var statusColor: Color {
-        switch order.statusEnum {
+        switch displayOrder.statusEnum {
         case .pending: return .orange
         case .preparing: return .blue
         case .ready: return .green
@@ -29,27 +36,34 @@ struct OrderDetailView: View {
                 Color.backgroundGreen
                     .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Status Card
-                        statusCard
-                        
-                        // Order Info
-                        orderInfoCard
-                        
-                        // Order Items
-                        if let items = order.items, !items.isEmpty {
-                            orderItemsCard(items: items)
+                if isLoadingDetails {
+                    LoadingView(message: "Loading order details...")
+                } else {
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            // Status Card
+                            statusCard
+                            
+                            // Order Info
+                            orderInfoCard
+                            
+                            // Order Items
+                            if let items = displayOrder.items, !items.isEmpty {
+                                orderItemsCard(items: items)
+                            } else {
+                                // Show placeholder when items not available
+                                orderItemsPlaceholder
+                            }
+                            
+                            // Actions (only for pending orders)
+                            if displayOrder.status == "pending" {
+                                actionsCard
+                            }
+                            
+                            Spacer(minLength: 40)
                         }
-                        
-                        // Actions (only for pending orders)
-                        if order.status == "pending" {
-                            actionsCard
-                        }
-                        
-                        Spacer(minLength: 40)
+                        .padding()
                     }
-                    .padding()
                 }
             }
             .navigationTitle("Order Details")
@@ -77,9 +91,31 @@ struct OrderDetailView: View {
                 editOrderSheet
             }
             .onAppear {
-                editedNotes = order.notes ?? ""
+                editedNotes = displayOrder.notes ?? ""
+                // Fetch full order details if items are empty
+                if displayOrder.items?.isEmpty ?? true {
+                    Task {
+                        await fetchOrderDetails()
+                    }
+                }
             }
         }
+    }
+    
+    // MARK: - Fetch Order Details
+    private func fetchOrderDetails() async {
+        isLoadingDetails = true
+        do {
+            detailedOrder = try await OrderService.shared.getOrder(id: order.id)
+            #if DEBUG
+            print("📦 Fetched order details: \(detailedOrder?.items?.count ?? 0) items")
+            #endif
+        } catch {
+            #if DEBUG
+            print("❌ Failed to fetch order details: \(error)")
+            #endif
+        }
+        isLoadingDetails = false
     }
     
     // MARK: - Status Card
@@ -91,14 +127,14 @@ struct OrderDetailView: View {
                     .fill(statusColor.opacity(0.2))
                     .frame(width: 80, height: 80)
                 
-                Image(systemName: order.statusEnum.iconName)
+                Image(systemName: displayOrder.statusEnum.iconName)
                     .font(.system(size: 36))
                     .foregroundColor(statusColor)
             }
             
             // Status Text
             VStack(spacing: 4) {
-                Text(order.statusEnum.displayName)
+                Text(displayOrder.statusEnum.displayName)
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(statusColor)
@@ -118,7 +154,7 @@ struct OrderDetailView: View {
     }
     
     private var statusMessage: String {
-        switch order.statusEnum {
+        switch displayOrder.statusEnum {
         case .pending:
             return "Your order is waiting to be prepared"
         case .preparing:
@@ -142,7 +178,7 @@ struct OrderDetailView: View {
     }
     
     private var statusIndex: Int {
-        switch order.statusEnum {
+        switch displayOrder.statusEnum {
         case .pending: return 0
         case .preparing: return 1
         case .ready: return 2
@@ -158,15 +194,15 @@ struct OrderDetailView: View {
                 .foregroundColor(.darkGreen)
             
             // Order ID
-            infoRow(icon: "number", title: "Order ID", value: "#\(order.id.prefix(8).uppercased())")
+            infoRow(icon: "number", title: "Order ID", value: "#\(displayOrder.id.prefix(8).uppercased())")
             
             // Date
-            infoRow(icon: "calendar", title: "Placed on", value: order.formattedDate)
+            infoRow(icon: "calendar", title: "Placed on", value: displayOrder.formattedDate)
             
             // Payment Method
             HStack {
-                Image(systemName: order.status == "picked_up" ? "checkmark.circle.fill" : "banknote.fill")
-                    .foregroundColor(order.status == "picked_up" ? .green : .blue)
+                Image(systemName: displayOrder.status == "picked_up" ? "checkmark.circle.fill" : "banknote.fill")
+                    .foregroundColor(displayOrder.status == "picked_up" ? .green : .blue)
                     .frame(width: 24)
                 
                 Text("Payment")
@@ -175,14 +211,14 @@ struct OrderDetailView: View {
                 
                 Spacer()
                 
-                Text(order.status == "picked_up" ? "Paid" : "Pay at Pickup")
+                Text(displayOrder.status == "picked_up" ? "Paid" : "Pay at Pickup")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundColor(order.status == "picked_up" ? .green : .blue)
+                    .foregroundColor(displayOrder.status == "picked_up" ? .green : .blue)
             }
             
             // Pickup Time
-            if let pickupTime = order.pickupTime, !pickupTime.isEmpty {
+            if let pickupTime = displayOrder.pickupTime, !pickupTime.isEmpty {
                 HStack {
                     Image(systemName: "calendar.badge.clock")
                         .foregroundColor(.purple)
@@ -202,7 +238,7 @@ struct OrderDetailView: View {
             }
             
             // Notes
-            if let notes = order.notes, !notes.isEmpty {
+            if let notes = displayOrder.notes, !notes.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Image(systemName: "note.text")
@@ -225,11 +261,15 @@ struct OrderDetailView: View {
                 Text("Total Amount")
                     .font(.headline)
                 Spacer()
-                if let total = order.totalAmount {
+                if let total = displayOrder.totalAmount, total > 0 {
                     Text("$\(total, specifier: "%.2f")")
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.primaryGreen)
+                } else {
+                    Text("Calculating...")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
                 }
             }
         }
@@ -277,6 +317,35 @@ struct OrderDetailView: View {
         }
     }
     
+    // MARK: - Order Items Placeholder
+    private var orderItemsPlaceholder: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Order Items")
+                .font(.headline)
+                .foregroundColor(.darkGreen)
+            
+            HStack {
+                Image(systemName: "bag.fill")
+                    .foregroundColor(.gray)
+                VStack(alignment: .leading) {
+                    Text("Order items not available")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                    Text("Item details will show when ready")
+                        .font(.caption)
+                        .foregroundColor(.gray.opacity(0.7))
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(8)
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+    }
+    
     // MARK: - Order Items Card
     private func orderItemsCard(items: [OrderItem]) -> some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -297,9 +366,16 @@ struct OrderDetailView: View {
                     
                     // Item Info
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(item.product?.name ?? "Product")
+                        Text(item.displayName)
                             .font(.subheadline)
                             .fontWeight(.medium)
+                        
+                        // Show unit price
+                        if item.displayUnitPrice > 0 {
+                            Text("$\(item.displayUnitPrice, specifier: "%.2f") each")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
                         
                         if let instructions = item.specialInstructions, !instructions.isEmpty {
                             Text(instructions)

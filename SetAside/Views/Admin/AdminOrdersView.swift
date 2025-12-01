@@ -10,16 +10,70 @@ struct AdminOrdersView: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var isSuccess = false
+    @State private var searchText = ""
+    
+    var searchedOrders: [Order] {
+        if searchText.isEmpty {
+            return viewModel.filteredOrders
+        }
+        return viewModel.filteredOrders.filter { order in
+            // Search by order ID
+            if order.id.lowercased().contains(searchText.lowercased()) {
+                return true
+            }
+            // Search by customer name
+            if let name = order.customer?.fullName,
+               name.lowercased().contains(searchText.lowercased()) {
+                return true
+            }
+            // Search by customer phone
+            if let phone = order.customer?.phone,
+               phone.contains(searchText) {
+                return true
+            }
+            // Search by product name in items
+            if let items = order.items {
+                for item in items {
+                    if let productName = item.product?.name,
+                       productName.lowercased().contains(searchText.lowercased()) {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+    }
     
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                // Search Bar
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
+                    
+                    TextField("Search by name, phone, order ID, or item...", text: $searchText)
+                        .textFieldStyle(PlainTextFieldStyle())
+                    
+                    if !searchText.isEmpty {
+                        Button(action: { searchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+                .padding(10)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .padding(.horizontal)
+                .padding(.top, 8)
+                
                 // Status Filter
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         StatusFilterButton(
-                            title: "All",
-                            count: viewModel.orders.count,
+                            title: "Active",
+                            count: viewModel.pendingOrders.count + viewModel.readyOrders.count,
                             isSelected: viewModel.selectedStatus == "all",
                             color: .primary
                         ) {
@@ -36,28 +90,19 @@ struct AdminOrdersView: View {
                         }
                         
                         StatusFilterButton(
-                            title: "Preparing",
-                            count: viewModel.preparingOrders.count,
-                            isSelected: viewModel.selectedStatus == "preparing",
-                            color: .blue
-                        ) {
-                            viewModel.selectedStatus = "preparing"
-                        }
-                        
-                        StatusFilterButton(
                             title: "Ready",
                             count: viewModel.readyOrders.count,
                             isSelected: viewModel.selectedStatus == "ready",
-                            color: .green
+                            color: .blue
                         ) {
                             viewModel.selectedStatus = "ready"
                         }
                         
                         StatusFilterButton(
-                            title: "Picked Up",
-                            count: viewModel.pickedUpOrders.count,
+                            title: "Completed",
+                            count: viewModel.completedOrders.count,
                             isSelected: viewModel.selectedStatus == "picked_up",
-                            color: .gray
+                            color: .green
                         ) {
                             viewModel.selectedStatus = "picked_up"
                         }
@@ -74,23 +119,25 @@ struct AdminOrdersView: View {
                     Spacer()
                     ProgressView("Loading orders...")
                     Spacer()
-                } else if viewModel.filteredOrders.isEmpty {
+                } else if searchedOrders.isEmpty {
                     Spacer()
                     VStack(spacing: 16) {
-                        Image(systemName: "doc.text")
+                        Image(systemName: searchText.isEmpty ? "doc.text" : "magnifyingglass")
                             .font(.system(size: 60))
                             .foregroundColor(.gray)
-                        Text("No orders found")
+                        Text(searchText.isEmpty ? "No orders found" : "No matching orders")
                             .font(.headline)
                             .foregroundColor(.gray)
-                        Text(viewModel.selectedStatus == "all" ? "No orders have been placed yet" : "No \(viewModel.selectedStatus.replacingOccurrences(of: "_", with: " ")) orders")
+                        Text(searchText.isEmpty 
+                             ? (viewModel.selectedStatus == "all" ? "No active orders" : "No \(viewModel.selectedStatus.replacingOccurrences(of: "_", with: " ")) orders")
+                             : "Try a different search term")
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }
                     Spacer()
                 } else {
                     List {
-                        ForEach(viewModel.filteredOrders) { order in
+                        ForEach(searchedOrders) { order in
                             AdminOrderRow(order: order, viewModel: viewModel) { orderId, newStatus in
                                 Task {
                                     let success = await viewModel.updateOrderStatus(orderId: orderId, newStatus: newStatus)
@@ -118,10 +165,82 @@ struct AdminOrdersView: View {
             } message: {
                 Text(alertMessage)
             }
+            .sheet(isPresented: $viewModel.showCompletionModal) {
+                OrderCompletionModal(onDismiss: {
+                    viewModel.dismissCompletionModal()
+                })
+            }
             .task {
                 await viewModel.loadAllOrders()
             }
         }
+    }
+}
+
+// MARK: - Order Completion Modal
+struct OrderCompletionModal: View {
+    let onDismiss: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            
+            // Success Icon
+            ZStack {
+                Circle()
+                    .fill(Color.green.opacity(0.2))
+                    .frame(width: 120, height: 120)
+                
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 80))
+                    .foregroundColor(.green)
+            }
+            
+            // Title
+            Text("Great Job! 🎉")
+                .font(.title)
+                .fontWeight(.bold)
+            
+            // Message
+            VStack(spacing: 8) {
+                Text("Thanks for completing your work!")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text("The order is ready for customer pickup.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal)
+            
+            // Encouragement
+            VStack(spacing: 4) {
+                Text("Ready for the next order?")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color.green.opacity(0.1))
+            .cornerRadius(12)
+            
+            Spacer()
+            
+            // Button
+            Button(action: onDismiss) {
+                Text("Continue")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.green)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 40)
+        }
+        .background(Color(.systemBackground))
+        .interactiveDismissDisabled()
     }
 }
 
@@ -166,16 +285,31 @@ struct AdminOrderRow: View {
     @ObservedObject var viewModel: AdminOrderViewModel
     let onStatusUpdate: (String, String) -> Void
     
-    @State private var showStatusPicker = false
     @State private var isExpanded = false
     
     var statusColor: Color {
         switch order.status {
-        case "pending": return .orange
-        case "preparing": return .blue
-        case "ready": return .green
-        case "picked_up": return .gray
+        case "pending", "preparing": return .orange
+        case "ready": return .blue
+        case "picked_up": return .green
         default: return .gray
+        }
+    }
+    
+    var actionButtonColor: Color {
+        switch order.status {
+        case "pending", "preparing": return .blue  // "Ready for Pickup" button
+        case "ready": return .green  // "Complete Order" button
+        default: return .gray
+        }
+    }
+    
+    var displayStatus: String {
+        switch order.status {
+        case "pending", "preparing": return "Pending"
+        case "ready": return "Ready"
+        case "picked_up": return "Completed"
+        default: return order.status.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }
     
@@ -196,62 +330,33 @@ struct AdminOrderRow: View {
                 
                 Spacer()
                 
-                // Status Badge
-                Menu {
-                    ForEach(viewModel.orderStatuses, id: \.self) { status in
-                        Button {
-                            if status != order.status {
-                                onStatusUpdate(order.id, status)
-                            }
-                        } label: {
-                            HStack {
-                                Text(status.replacingOccurrences(of: "_", with: " ").capitalized)
-                                if status == order.status {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(order.status.replacingOccurrences(of: "_", with: " ").capitalized)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                        Image(systemName: "chevron.down")
-                            .font(.caption2)
-                    }
+                // Status Badge (no dropdown menu, just display)
+                Text(displayStatus)
+                    .font(.caption)
+                    .fontWeight(.semibold)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                     .background(statusColor.opacity(0.2))
                     .foregroundColor(statusColor)
                     .cornerRadius(12)
-                }
             }
             
-            // Customer Info
+            // Customer Info (without email)
             if let customer = order.customer {
                 HStack(spacing: 8) {
                     Image(systemName: "person.circle.fill")
                         .foregroundColor(.primaryGreen)
                     
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(customer.fullName)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        
-                        if let phone = customer.phone, !phone.isEmpty {
-                            Text(phone)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+                    Text(customer.fullName)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    if let phone = customer.phone, !phone.isEmpty {
+                        Spacer()
+                        Text(phone)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
-                    
-                    Spacer()
-                    
-                    Text(customer.email)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
                 }
                 .padding(10)
                 .background(Color.gray.opacity(0.1))
@@ -285,91 +390,136 @@ struct AdminOrderRow: View {
             
             // Payment Status
             HStack(spacing: 6) {
-                Image(systemName: order.status == "picked_up" ? "checkmark.circle.fill" : "banknote.fill")
+                Image(systemName: "banknote.fill")
                     .font(.caption)
-                    .foregroundColor(order.status == "picked_up" ? .green : .blue)
-                Text(order.status == "picked_up" ? "Paid & Picked Up" : "Pay at Pickup")
+                    .foregroundColor(.blue)
+                Text("Pay at Pickup")
                     .font(.caption)
-                    .foregroundColor(order.status == "picked_up" ? .green : .blue)
+                    .foregroundColor(.blue)
                     .fontWeight(.medium)
             }
             
-            // Quick Action Buttons
-            if order.status != "picked_up" {
-                HStack(spacing: 8) {
-                    if let nextStatus = viewModel.getNextStatus(currentStatus: order.status) {
-                        Button {
-                            onStatusUpdate(order.id, nextStatus)
-                        } label: {
-                            HStack {
-                                Image(systemName: statusIcon(for: nextStatus))
-                                Text(buttonText(for: nextStatus))
-                            }
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(statusColor(for: nextStatus))
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                        }
+            // Order Items - Always visible, tap to expand
+            VStack(alignment: .leading, spacing: 8) {
+                // Items header with tap to expand
+                Button(action: {
+                    withAnimation {
+                        isExpanded.toggle()
                     }
-                }
-            }
-            
-            // Order Items (expandable)
-            DisclosureGroup(isExpanded: $isExpanded) {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(order.items ?? [], id: \.id) { item in
-                        HStack {
-                            Text("\(item.quantity)x")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .frame(width: 30, alignment: .leading)
-                            
-                            Text(item.product?.name ?? "Unknown Product")
-                                .font(.subheadline)
-                            
-                            Spacer()
-                            
-                            Text(String(format: "$%.2f", item.totalPrice))
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                        }
-                        
-                        if let instructions = item.specialInstructions, !instructions.isEmpty {
-                            Text("  Note: \(instructions)")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                                .padding(.leading, 30)
-                        }
-                    }
-                    
-                    Divider()
-                    
+                }) {
                     HStack {
-                        Text("Total")
+                        Text("\((order.items ?? []).count) item\((order.items ?? []).count == 1 ? "" : "s")")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Text(String(format: "$%.2f", order.totalAmount ?? 0))
                             .font(.subheadline)
                             .fontWeight(.semibold)
-                        Spacer()
-                        Text(String(format: "$%.2f", order.totalAmount ?? 0))
-                            .font(.headline)
-                            .foregroundColor(.green)
+                            .foregroundColor(.primary)
+                        
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
+                    .padding(10)
+                    .background(Color.gray.opacity(0.05))
+                    .cornerRadius(8)
                 }
-                .padding(.top, 8)
-            } label: {
-                HStack {
-                    Text("\((order.items ?? []).count) item\((order.items ?? []).count == 1 ? "" : "s")")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    Text(String(format: "$%.2f", order.totalAmount ?? 0))
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                .buttonStyle(PlainButtonStyle())
+                
+                // Expanded items list
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(order.items ?? [], id: \.id) { item in
+                            HStack {
+                                Text("\(item.quantity)x")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 30, alignment: .leading)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.displayName)
+                                        .font(.subheadline)
+                                    
+                                    if item.displayUnitPrice > 0 {
+                                        Text("$\(item.displayUnitPrice, specifier: "%.2f") each")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                
+                                Spacer()
+                                
+                                Text(String(format: "$%.2f", item.totalPrice))
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                            }
+                            
+                            if let instructions = item.specialInstructions, !instructions.isEmpty {
+                                Text("Note: \(instructions)")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                                    .padding(.leading, 30)
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        HStack {
+                            Text("Total")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                            Spacer()
+                            Text(String(format: "$%.2f", order.totalAmount ?? 0))
+                                .font(.headline)
+                                .foregroundColor(.green)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 8)
                 }
+            }
+            .background(Color.gray.opacity(0.05))
+            .cornerRadius(8)
+            
+            // Quick Action Button - Separate from items
+            if let nextStatus = viewModel.getNextStatus(currentStatus: order.status) {
+                Button {
+                    onStatusUpdate(order.id, nextStatus)
+                } label: {
+                    HStack {
+                        Image(systemName: "shippingbox.fill")
+                        Text("Mark Ready for Pickup")
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                }
+                .buttonStyle(PlainButtonStyle())
+            } else if order.status == "ready" {
+                // Show "Complete Order" button for ready orders
+                Button {
+                    viewModel.markOrderCompleted(orderId: order.id)
+                } label: {
+                    HStack {
+                        Image(systemName: "checkmark.seal.fill")
+                        Text("Customer Picked Up")
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .padding(.vertical, 8)
@@ -417,35 +567,6 @@ struct AdminOrderRow: View {
         }
         
         return dateString
-    }
-    
-    private func statusIcon(for status: String) -> String {
-        switch status {
-        case "pending": return "clock"
-        case "preparing": return "flame"
-        case "ready": return "checkmark.circle"
-        case "picked_up": return "bag.fill"
-        default: return "circle"
-        }
-    }
-    
-    private func buttonText(for status: String) -> String {
-        switch status {
-        case "preparing": return "Start Preparing"
-        case "ready": return "Mark Ready for Pickup"
-        case "picked_up": return "Mark as Picked Up"
-        default: return "Update Status"
-        }
-    }
-    
-    private func statusColor(for status: String) -> Color {
-        switch status {
-        case "pending": return .orange
-        case "preparing": return .blue
-        case "ready": return .green
-        case "picked_up": return .gray
-        default: return .gray
-        }
     }
 }
 

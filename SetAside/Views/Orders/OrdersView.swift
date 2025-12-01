@@ -188,8 +188,38 @@ struct OrderRow: View {
                 // Items Preview
                 if let items = order.items, !items.isEmpty {
                     HStack {
-                        Text("\(items.count) item(s)")
-                            .font(.subheadline)
+                        // Show items summary
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(items.count) item(s)")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                            
+                            // Show first item name as preview using displayName
+                            if let firstItem = items.first {
+                                let itemName = firstItem.displayName
+                                Text(items.count > 1 ? "\(itemName) + \(items.count - 1) more" : itemName)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        // Payment Status
+                        HStack(spacing: 4) {
+                            Image(systemName: order.status == "picked_up" ? "checkmark.circle.fill" : "banknote.fill")
+                                .font(.caption)
+                            Text(order.status == "picked_up" ? "Paid" : "Pay at Pickup")
+                                .font(.caption)
+                        }
+                        .foregroundColor(order.status == "picked_up" ? .green : .blue)
+                    }
+                } else {
+                    // Fallback when items not available in list view
+                    HStack {
+                        Text("Tap to view details")
+                            .font(.caption)
                             .foregroundColor(.gray)
                         
                         Spacer()
@@ -213,10 +243,14 @@ struct OrderRow: View {
                     
                     Spacer()
                     
-                    if let total = order.totalAmount {
+                    if let total = order.totalAmount, total > 0 {
                         Text("$\(total, specifier: "%.2f")")
                             .font(.headline)
                             .foregroundColor(.primaryGreen)
+                    } else {
+                        Text("View details")
+                            .font(.caption)
+                            .foregroundColor(.gray)
                     }
                 }
                 

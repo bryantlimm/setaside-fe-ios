@@ -170,8 +170,8 @@ struct AddEditProductView: View {
             description = product.description ?? ""
             priceText = String(format: "%.2f", product.price)
             stockText = String(product.stockQuantity ?? 0)
-            category = product.category
-            isAvailable = product.isAvailable
+            category = product.category ?? ""
+            isAvailable = product.isAvailable ?? true
             imageUrl = product.imageUrl ?? ""
         } else if let firstCategory = viewModel.categories.first {
             category = firstCategory

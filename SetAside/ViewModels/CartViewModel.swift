@@ -109,7 +109,10 @@ class CartViewModel: ObservableObject {
         }
         
         #if DEBUG
-        print("🛒 Placing order with \(orderItems.count) items")
+        print("🛒 Placing order with \(orderItems.count) items:")
+        for (index, item) in items.enumerated() {
+            print("   Item \(index + 1): product_id=\(item.product.id), qty=\(item.quantity), name=\(item.product.name)")
+        }
         #endif
         
         do {

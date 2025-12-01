@@ -125,16 +125,55 @@ struct OrderItem: Codable, Identifiable {
         unitPrice = try? container.decodeIfPresent(Double.self, forKey: .unitPrice)
         subtotal = try? container.decodeIfPresent(Double.self, forKey: .subtotal)
         specialInstructions = try? container.decodeIfPresent(String.self, forKey: .specialInstructions)
-        product = try? container.decodeIfPresent(Product.self, forKey: .product)
+        
+        // Try to decode product with error logging
+        do {
+            product = try container.decodeIfPresent(Product.self, forKey: .product)
+        } catch {
+            #if DEBUG
+            print("⚠️ Failed to decode product in OrderItem: \(error)")
+            #endif
+            product = nil
+        }
+        
+        #if DEBUG
+        print("📦 Decoded OrderItem: id=\(id), qty=\(quantity), unitPrice=\(unitPrice ?? 0), subtotal=\(subtotal ?? 0), product=\(product?.name ?? "nil")")
+        #endif
+    }
+    
+    init(id: String, orderId: String?, productId: String?, quantity: Int, unitPrice: Double?, subtotal: Double?, specialInstructions: String?, product: Product?) {
+        self.id = id
+        self.orderId = orderId
+        self.productId = productId
+        self.quantity = quantity
+        self.unitPrice = unitPrice
+        self.subtotal = subtotal
+        self.specialInstructions = specialInstructions
+        self.product = product
     }
     
     var totalPrice: Double {
-        // Use subtotal from API, or calculate from unit price, or use product price
+        // Use subtotal from API first (most reliable)
         if let subtotal = subtotal, subtotal > 0 {
             return subtotal
         }
-        let price = unitPrice ?? product?.price ?? 0
+        // Then try unit price * quantity
+        if let unitPrice = unitPrice, unitPrice > 0 {
+            return unitPrice * Double(quantity)
+        }
+        // Fall back to product price
+        let price = product?.price ?? 0
         return price * Double(quantity)
+    }
+    
+    /// Get the display name for this item
+    var displayName: String {
+        product?.name ?? "Product"
+    }
+    
+    /// Get the unit price for display
+    var displayUnitPrice: Double {
+        unitPrice ?? product?.price ?? 0
     }
 }
 

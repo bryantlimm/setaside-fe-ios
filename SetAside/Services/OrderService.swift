@@ -83,7 +83,12 @@ class OrderService {
         print("📦 Order \(id.prefix(8)) details - items: \(order.items?.count ?? 0), total: $\(order.totalAmount ?? 0)")
         if let items = order.items {
             for item in items {
-                print("   - \(item.quantity)x \(item.product?.name ?? "Unknown") @ $\(item.unitPrice ?? 0)")
+                print("   - \(item.quantity)x \(item.displayName) @ $\(item.displayUnitPrice) = $\(item.totalPrice)")
+                if let product = item.product {
+                    print("     Product: id=\(product.id), name=\(product.name), price=\(product.price)")
+                } else {
+                    print("     ⚠️ Product is nil, using unitPrice: \(item.unitPrice ?? 0)")
+                }
             }
         }
         #endif
