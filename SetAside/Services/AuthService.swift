@@ -20,6 +20,10 @@ class AuthService {
             phone: phone
         )
         
+        #if DEBUG
+        print("📝 Registering user: \(email), fullName: \(fullName), phone: \(phone ?? "nil")")
+        #endif
+        
         let response: AuthResponse = try await networkManager.request(
             endpoint: "/auth/register",
             method: "POST",

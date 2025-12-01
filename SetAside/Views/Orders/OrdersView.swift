@@ -173,6 +173,18 @@ struct OrderRow: View {
                     .cornerRadius(12)
                 }
                 
+                // Scheduled Pickup Time
+                if let pickupTime = order.pickupTime, !pickupTime.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.caption)
+                        Text("Pickup: \(formatPickupTime(pickupTime))")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(.purple)
+                }
+                
                 // Items Preview
                 if let items = order.items, !items.isEmpty {
                     HStack {
@@ -181,6 +193,15 @@ struct OrderRow: View {
                             .foregroundColor(.gray)
                         
                         Spacer()
+                        
+                        // Payment Status
+                        HStack(spacing: 4) {
+                            Image(systemName: order.status == "picked_up" ? "checkmark.circle.fill" : "banknote.fill")
+                                .font(.caption)
+                            Text(order.status == "picked_up" ? "Paid" : "Pay at Pickup")
+                                .font(.caption)
+                        }
+                        .foregroundColor(order.status == "picked_up" ? .green : .blue)
                     }
                 }
                 
@@ -213,6 +234,27 @@ struct OrderRow: View {
             .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func formatPickupTime(_ dateString: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        if let date = formatter.date(from: dateString) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d, h:mm a"
+            return displayFormatter.string(from: date)
+        }
+        
+        // Try without fractional seconds
+        formatter.formatOptions = [.withInternetDateTime]
+        if let date = formatter.date(from: dateString) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d, h:mm a"
+            return displayFormatter.string(from: date)
+        }
+        
+        return dateString
     }
 }
 

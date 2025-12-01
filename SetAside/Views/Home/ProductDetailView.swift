@@ -12,6 +12,7 @@ struct ProductDetailView: View {
     
     @State private var quantity: Int = 1
     @State private var specialInstructions: String = ""
+    @State private var navigateToCheckout: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -157,7 +158,7 @@ struct ProductDetailView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                // Add to Cart Button
+                // Add to Cart and Buy Now Buttons
                 VStack(spacing: 12) {
                     HStack {
                         Text("Total:")
@@ -171,30 +172,65 @@ struct ProductDetailView: View {
                             .foregroundColor(.primaryGreen)
                     }
                     
-                    Button(action: {
-                        cartViewModel.addToCart(
-                            product: product,
-                            quantity: quantity,
-                            specialInstructions: specialInstructions.isEmpty ? nil : specialInstructions
-                        )
-                        dismiss()
-                    }) {
-                        HStack {
-                            Image(systemName: "cart.badge.plus")
-                            Text("Add to Cart")
+                    HStack(spacing: 12) {
+                        // Add to Cart Button
+                        Button(action: {
+                            cartViewModel.addToCart(
+                                product: product,
+                                quantity: quantity,
+                                specialInstructions: specialInstructions.isEmpty ? nil : specialInstructions
+                            )
+                            dismiss()
+                        }) {
+                            HStack {
+                                Image(systemName: "cart.badge.plus")
+                                Text("Add to Cart")
+                            }
+                            .font(.headline)
+                            .foregroundColor(.primaryGreen)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.primaryGreen, lineWidth: 2)
+                            )
+                            .cornerRadius(12)
                         }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(product.isAvailable ? Color.primaryGreen : Color.gray)
-                        .cornerRadius(12)
+                        .disabled(!product.isAvailable)
+                        
+                        // Buy Now Button
+                        Button(action: {
+                            cartViewModel.addToCart(
+                                product: product,
+                                quantity: quantity,
+                                specialInstructions: specialInstructions.isEmpty ? nil : specialInstructions
+                            )
+                            navigateToCheckout = true
+                        }) {
+                            HStack {
+                                Image(systemName: "bolt.fill")
+                                Text("Buy Now")
+                            }
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(product.isAvailable ? Color.primaryGreen : Color.gray)
+                            .cornerRadius(12)
+                        }
+                        .disabled(!product.isAvailable)
                     }
-                    .disabled(!product.isAvailable)
                 }
                 .padding()
                 .background(Color.white)
                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: -4)
+            }
+            .navigationDestination(isPresented: $navigateToCheckout) {
+                CheckoutView()
+                    .onDisappear {
+                        dismiss()
+                    }
             }
         }
     }

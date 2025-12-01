@@ -11,6 +11,7 @@ struct MainTabView: View {
     @StateObject private var productViewModel = ProductViewModel()
     
     @State private var selectedTab = 0
+    @State private var hideTabBar = false
     
     // Check if user is admin or cashier (staff)
     private var isStaff: Bool {
@@ -30,7 +31,7 @@ struct MainTabView: View {
                     case 1:
                         AdminProductListView()
                     case 2:
-                        HomeView()
+                        HomeView(hideTabBar: $hideTabBar)
                             .environmentObject(productViewModel)
                     case 3:
                         ProfileView()
@@ -41,24 +42,26 @@ struct MainTabView: View {
                     // Customer view
                     switch selectedTab {
                     case 0:
-                        HomeView()
+                        HomeView(hideTabBar: $hideTabBar)
                             .environmentObject(productViewModel)
                     case 1:
                         OrdersView()
                     case 2:
                         ProfileView()
                     default:
-                        HomeView()
+                        HomeView(hideTabBar: $hideTabBar)
                             .environmentObject(productViewModel)
                     }
                 }
             }
             
-            // Bottom Navigation Bar
-            if isStaff {
-                staffBottomNavBar
-            } else {
-                customerBottomNavBar
+            // Bottom Navigation Bar - hide when navigating to cart/checkout
+            if !hideTabBar {
+                if isStaff {
+                    staffBottomNavBar
+                } else {
+                    customerBottomNavBar
+                }
             }
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)

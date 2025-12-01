@@ -13,6 +13,7 @@ struct Order: Codable, Identifiable {
     let pickupTime: String?
     let totalAmount: Double?
     let items: [OrderItem]?
+    let customer: User?
     let createdAt: String?
     let updatedAt: String?
     
@@ -24,8 +25,43 @@ struct Order: Codable, Identifiable {
         case pickupTime = "pickup_time"
         case totalAmount = "total_amount"
         case items
+        case customer
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        customerId = try container.decodeIfPresent(String.self, forKey: .customerId)
+        status = try container.decode(String.self, forKey: .status)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        pickupTime = try container.decodeIfPresent(String.self, forKey: .pickupTime)
+        totalAmount = try container.decodeIfPresent(Double.self, forKey: .totalAmount)
+        customer = try container.decodeIfPresent(User.self, forKey: .customer)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+        
+        // Handle items - can be full OrderItem array or just count objects like [{"count": 0}]
+        if let fullItems = try? container.decodeIfPresent([OrderItem].self, forKey: .items) {
+            items = fullItems
+        } else {
+            // If decoding fails (e.g., items is [{"count": 0}]), set to empty array
+            items = []
+        }
+    }
+    
+    init(id: String, customerId: String?, status: String, notes: String?, pickupTime: String?, totalAmount: Double?, items: [OrderItem]?, customer: User?, createdAt: String?, updatedAt: String?) {
+        self.id = id
+        self.customerId = customerId
+        self.status = status
+        self.notes = notes
+        self.pickupTime = pickupTime
+        self.totalAmount = totalAmount
+        self.items = items
+        self.customer = customer
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
     }
     
     var statusEnum: AppConstants.OrderStatus {
@@ -43,6 +79,16 @@ struct Order: Codable, Identifiable {
             displayFormatter.timeStyle = .short
             return displayFormatter.string(from: date)
         }
+        
+        // Try without fractional seconds
+        formatter.formatOptions = [.withInternetDateTime]
+        if let date = formatter.date(from: createdAt) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateStyle = .medium
+            displayFormatter.timeStyle = .short
+            return displayFormatter.string(from: date)
+        }
+        
         return createdAt
     }
 }
@@ -50,9 +96,10 @@ struct Order: Codable, Identifiable {
 struct OrderItem: Codable, Identifiable {
     let id: String
     let orderId: String?
-    let productId: String
+    let productId: String?
     let quantity: Int
     let unitPrice: Double?
+    let subtotal: Double?
     let specialInstructions: String?
     let product: Product?
     
@@ -62,25 +109,78 @@ struct OrderItem: Codable, Identifiable {
         case productId = "product_id"
         case quantity
         case unitPrice = "unit_price"
+        case subtotal
         case specialInstructions = "special_instructions"
         case product
     }
     
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // ID might be missing in some responses, generate a UUID if needed
+        id = (try? container.decode(String.self, forKey: .id)) ?? UUID().uuidString
+        orderId = try? container.decodeIfPresent(String.self, forKey: .orderId)
+        productId = try? container.decodeIfPresent(String.self, forKey: .productId)
+        quantity = (try? container.decode(Int.self, forKey: .quantity)) ?? 1
+        unitPrice = try? container.decodeIfPresent(Double.self, forKey: .unitPrice)
+        subtotal = try? container.decodeIfPresent(Double.self, forKey: .subtotal)
+        specialInstructions = try? container.decodeIfPresent(String.self, forKey: .specialInstructions)
+        product = try? container.decodeIfPresent(Product.self, forKey: .product)
+    }
+    
     var totalPrice: Double {
-        (unitPrice ?? 0) * Double(quantity)
+        // Use subtotal from API, or calculate from unit price, or use product price
+        if let subtotal = subtotal, subtotal > 0 {
+            return subtotal
+        }
+        let price = unitPrice ?? product?.price ?? 0
+        return price * Double(quantity)
     }
 }
 
 struct OrdersResponse: Codable {
+    let data: [Order]?
     let orders: [Order]?
     let items: [Order]?
+    let meta: OrdersMeta?
     let total: Int?
     let page: Int?
     let limit: Int?
     
     var allOrders: [Order] {
-        return orders ?? items ?? []
+        return data ?? orders ?? items ?? []
     }
+}
+
+// Response wrapper for single order (create/update operations)
+// API might return: {"order": {...}}, {"data": {...}}, or just {...}
+struct SingleOrderResponse: Codable {
+    let data: Order?
+    let order: Order?
+    let message: String?
+    let id: String?
+    let status: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case data, order, message, id, status
+    }
+    
+    // Try to get the order from wrapper
+    var unwrappedOrder: Order? {
+        if let order = data ?? order {
+            return order
+        }
+        // If it has id and status at root level, it might be the order itself
+        // This case is already handled by direct Order decoding
+        return nil
+    }
+}
+
+struct OrdersMeta: Codable {
+    let total: Int?
+    let page: Int?
+    let limit: Int?
+    let totalPages: Int?
 }
 
 struct CreateOrderRequest: Codable {
@@ -93,6 +193,18 @@ struct CreateOrderRequest: Codable {
         case pickupTime = "pickup_time"
         case items
     }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        // Only encode if not nil
+        if let notes = notes {
+            try container.encode(notes, forKey: .notes)
+        }
+        if let pickupTime = pickupTime {
+            try container.encode(pickupTime, forKey: .pickupTime)
+        }
+        try container.encode(items, forKey: .items)
+    }
 }
 
 struct CreateOrderItemRequest: Codable {
@@ -104,6 +216,16 @@ struct CreateOrderItemRequest: Codable {
         case productId = "product_id"
         case quantity
         case specialInstructions = "special_instructions"
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(productId, forKey: .productId)
+        try container.encode(quantity, forKey: .quantity)
+        // Only encode if not nil
+        if let specialInstructions = specialInstructions {
+            try container.encode(specialInstructions, forKey: .specialInstructions)
+        }
     }
 }
 

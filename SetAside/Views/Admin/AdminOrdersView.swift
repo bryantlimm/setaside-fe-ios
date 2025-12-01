@@ -228,22 +228,92 @@ struct AdminOrderRow: View {
                 }
             }
             
-            // Quick Action Button (if not picked up)
-            if let nextStatus = viewModel.getNextStatus(currentStatus: order.status) {
-                Button {
-                    onStatusUpdate(order.id, nextStatus)
-                } label: {
-                    HStack {
-                        Image(systemName: statusIcon(for: nextStatus))
-                        Text("Mark as \(nextStatus.replacingOccurrences(of: "_", with: " ").capitalized)")
+            // Customer Info
+            if let customer = order.customer {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.circle.fill")
+                        .foregroundColor(.primaryGreen)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(customer.fullName)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        if let phone = customer.phone, !phone.isEmpty {
+                            Text(phone)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
-                    .font(.subheadline)
+                    
+                    Spacer()
+                    
+                    Text(customer.email)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                .padding(10)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
+            }
+            
+            // Scheduled Pickup Time
+            if let pickupTime = order.pickupTime, !pickupTime.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.caption)
+                        .foregroundColor(.purple)
+                    Text("Pickup: \(formatPickupTime(pickupTime))")
+                        .font(.caption)
+                        .foregroundColor(.purple)
+                        .fontWeight(.medium)
+                }
+            }
+            
+            // Order Notes
+            if let notes = order.notes, !notes.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: "note.text")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                    Text(notes)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Payment Status
+            HStack(spacing: 6) {
+                Image(systemName: order.status == "picked_up" ? "checkmark.circle.fill" : "banknote.fill")
+                    .font(.caption)
+                    .foregroundColor(order.status == "picked_up" ? .green : .blue)
+                Text(order.status == "picked_up" ? "Paid & Picked Up" : "Pay at Pickup")
+                    .font(.caption)
+                    .foregroundColor(order.status == "picked_up" ? .green : .blue)
                     .fontWeight(.medium)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(statusColor(for: nextStatus).opacity(0.15))
-                    .foregroundColor(statusColor(for: nextStatus))
-                    .cornerRadius(8)
+            }
+            
+            // Quick Action Buttons
+            if order.status != "picked_up" {
+                HStack(spacing: 8) {
+                    if let nextStatus = viewModel.getNextStatus(currentStatus: order.status) {
+                        Button {
+                            onStatusUpdate(order.id, nextStatus)
+                        } label: {
+                            HStack {
+                                Image(systemName: statusIcon(for: nextStatus))
+                                Text(buttonText(for: nextStatus))
+                            }
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(statusColor(for: nextStatus))
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                        }
+                    }
                 }
             }
             
@@ -265,6 +335,13 @@ struct AdminOrderRow: View {
                             Text(String(format: "$%.2f", item.totalPrice))
                                 .font(.subheadline)
                                 .fontWeight(.medium)
+                        }
+                        
+                        if let instructions = item.specialInstructions, !instructions.isEmpty {
+                            Text("  Note: \(instructions)")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                                .padding(.leading, 30)
                         }
                     }
                     
@@ -321,6 +398,27 @@ struct AdminOrderRow: View {
         return dateString
     }
     
+    private func formatPickupTime(_ dateString: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        if let date = formatter.date(from: dateString) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d, h:mm a"
+            return displayFormatter.string(from: date)
+        }
+        
+        // Try without fractional seconds
+        formatter.formatOptions = [.withInternetDateTime]
+        if let date = formatter.date(from: dateString) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d, h:mm a"
+            return displayFormatter.string(from: date)
+        }
+        
+        return dateString
+    }
+    
     private func statusIcon(for status: String) -> String {
         switch status {
         case "pending": return "clock"
@@ -328,6 +426,15 @@ struct AdminOrderRow: View {
         case "ready": return "checkmark.circle"
         case "picked_up": return "bag.fill"
         default: return "circle"
+        }
+    }
+    
+    private func buttonText(for status: String) -> String {
+        switch status {
+        case "preparing": return "Start Preparing"
+        case "ready": return "Mark Ready for Pickup"
+        case "picked_up": return "Mark as Picked Up"
+        default: return "Update Status"
         }
     }
     

@@ -39,11 +39,19 @@ class OrderViewModel: ObservableObject {
         errorMessage = nil
         
         do {
+            // The list API now returns items and total_amount directly
             let fetchedOrders = try await orderService.getOrders(
                 page: currentPage,
                 limit: 20,
                 status: selectedStatus
             )
+            
+            #if DEBUG
+            print("📋 Fetched \(fetchedOrders.count) orders")
+            for order in fetchedOrders {
+                print("📦 Order \(order.id.prefix(8)): \(order.items?.count ?? 0) items, total: $\(order.totalAmount ?? 0)")
+            }
+            #endif
             
             if refresh {
                 orders = fetchedOrders
@@ -57,9 +65,15 @@ class OrderViewModel: ObservableObject {
         } catch let error as APIError {
             errorMessage = error.errorDescription
             showError = true
+            #if DEBUG
+            print("❌ Failed to fetch orders: \(error)")
+            #endif
         } catch {
             errorMessage = error.localizedDescription
             showError = true
+            #if DEBUG
+            print("❌ Failed to fetch orders: \(error)")
+            #endif
         }
         
         isLoading = false

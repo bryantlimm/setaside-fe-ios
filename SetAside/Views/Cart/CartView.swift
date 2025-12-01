@@ -56,7 +56,10 @@ struct CartView: View {
                             }
                         }
                         .padding()
+                        .padding(.bottom, 180) // Extra padding for bottom summary
                     }
+                    
+                    Spacer()
                     
                     // Bottom Summary
                     VStack(spacing: 16) {
@@ -97,7 +100,7 @@ struct CartView: View {
                                 .cornerRadius(12)
                         }
                         .padding(.horizontal)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 16)
                     }
                     .background(Color.white)
                     .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: -4)
@@ -126,6 +129,12 @@ struct CartView: View {
         }
         .navigationDestination(isPresented: $showCheckout) {
             CheckoutView()
+        }
+        .onChange(of: showCheckout) { _, isShowing in
+            // When returning from checkout and cart is empty (order was placed), dismiss
+            if !isShowing && cartViewModel.isEmpty {
+                dismiss()
+            }
         }
     }
 }

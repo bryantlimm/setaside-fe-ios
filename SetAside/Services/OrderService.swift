@@ -25,7 +25,7 @@ class OrderService {
             items: items
         )
         
-        return try await networkManager.request(
+        return try await networkManager.requestWithFlexibleResponse(
             endpoint: "/orders",
             method: "POST",
             body: request
@@ -52,20 +52,43 @@ class OrderService {
     func getAllOrders(page: Int = 1, limit: Int = 100) async throws -> [Order] {
         let endpoint = "/orders?page=\(page)&limit=\(limit)"
         
+        #if DEBUG
+        print("🔍 Fetching all orders: \(endpoint)")
+        #endif
+        
         let response: OrdersResponse = try await networkManager.request(
             endpoint: endpoint,
             method: "GET"
         )
+        
+        #if DEBUG
+        print("📋 Orders response - data: \(response.data?.count ?? 0), orders: \(response.orders?.count ?? 0)")
+        #endif
         
         return response.allOrders
     }
     
     /// Get a specific order by ID
     func getOrder(id: String) async throws -> Order {
-        return try await networkManager.request(
+        #if DEBUG
+        print("🔍 Fetching order details for: \(id)")
+        #endif
+        
+        let order: Order = try await networkManager.requestWithFlexibleResponse(
             endpoint: "/orders/\(id)",
             method: "GET"
         )
+        
+        #if DEBUG
+        print("📦 Order \(id.prefix(8)) details - items: \(order.items?.count ?? 0), total: $\(order.totalAmount ?? 0)")
+        if let items = order.items {
+            for item in items {
+                print("   - \(item.quantity)x \(item.product?.name ?? "Unknown") @ $\(item.unitPrice ?? 0)")
+            }
+        }
+        #endif
+        
+        return order
     }
     
     /// Update an order (notes or pickup time)

@@ -45,13 +45,34 @@ class AdminOrderViewModel: ObservableObject {
         errorMessage = nil
         
         do {
+            // The list API now returns items and total_amount directly
             orders = try await orderService.getAllOrders()
+            
+            #if DEBUG
+            print("📋 Loaded \(orders.count) orders")
+            for order in orders {
+                print("📦 Order \(order.id.prefix(8)): \(order.items?.count ?? 0) items, total: $\(order.totalAmount ?? 0)")
+                if let items = order.items {
+                    for item in items {
+                        print("   - \(item.quantity)x \(item.product?.name ?? "Unknown") = $\(item.totalPrice)")
+                    }
+                }
+            }
+            #endif
+            
             // Sort by created date, newest first
             orders.sort { ($0.createdAt ?? "") > ($1.createdAt ?? "") }
+            
         } catch let error as APIError {
             errorMessage = error.localizedDescription
+            #if DEBUG
+            print("❌ Failed to load orders: \(error)")
+            #endif
         } catch {
             errorMessage = error.localizedDescription
+            #if DEBUG
+            print("❌ Failed to load orders: \(error)")
+            #endif
         }
         
         isLoading = false

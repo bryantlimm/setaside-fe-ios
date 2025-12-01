@@ -13,6 +13,7 @@ struct CheckoutView: View {
     @State private var pickupTime: Date = Date().addingTimeInterval(3600) // 1 hour from now
     @State private var useScheduledPickup: Bool = false
     @State private var showOrderComplete: Bool = false
+    @State private var shouldNavigateToHome: Bool = false
     
     var body: some View {
         ZStack {
@@ -145,11 +146,16 @@ struct CheckoutView: View {
                             .foregroundColor(.darkGreen)
                         
                         HStack {
-                            Image(systemName: "dollarsign.circle.fill")
+                            Image(systemName: "banknote.fill")
                                 .foregroundColor(.primaryGreen)
                                 .font(.title2)
-                            Text("Cash on Pickup")
-                                .fontWeight(.medium)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Pay When Picked Up")
+                                    .fontWeight(.medium)
+                                Text("Payment will be collected at pickup")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
                             Spacer()
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(.primaryGreen)
@@ -180,6 +186,7 @@ struct CheckoutView: View {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             } else {
+                                Image(systemName: "bag.fill")
                                 Text("Place Order - $\(cartViewModel.totalPrice, specifier: "%.2f")")
                             }
                         }
@@ -191,7 +198,9 @@ struct CheckoutView: View {
                         .cornerRadius(12)
                     }
                     .disabled(cartViewModel.isLoading)
-                    .padding()
+                    .padding(.horizontal)
+                    .padding(.top, 16)
+                    .padding(.bottom, 16)
                 }
                 .background(Color.white)
             }
@@ -214,8 +223,16 @@ struct CheckoutView: View {
         } message: {
             Text(cartViewModel.errorMessage ?? "An error occurred")
         }
-        .sheet(isPresented: $showOrderComplete) {
-            OrderCompleteView(order: cartViewModel.lastOrder)
+        .sheet(isPresented: $showOrderComplete, onDismiss: {
+            // When sheet is dismissed, go back to home
+            if shouldNavigateToHome {
+                dismiss()
+            }
+        }) {
+            OrderCompleteView(order: cartViewModel.lastOrder, onContinueShopping: {
+                shouldNavigateToHome = true
+                showOrderComplete = false
+            })
         }
         .onChange(of: cartViewModel.orderPlaced) { _, placed in
             if placed {
@@ -276,7 +293,7 @@ struct PickupOptionRow: View {
 // MARK: - Order Complete View
 struct OrderCompleteView: View {
     let order: Order?
-    @Environment(\.dismiss) var dismiss
+    var onContinueShopping: () -> Void
     @EnvironmentObject var cartViewModel: CartViewModel
     
     var body: some View {
@@ -307,48 +324,119 @@ struct OrderCompleteView: View {
                     
                     // Message
                     VStack(spacing: 8) {
-                        Text("Your order has been placed successfully.")
+                        Text("Your order has been confirmed.")
                             .font(.body)
                             .multilineTextAlignment(.center)
                             .foregroundColor(.gray)
                         
-                        Text("Check the Activity page to track your order status.")
+                        Text("The store is preparing your order now.")
                             .font(.subheadline)
+                            .fontWeight(.medium)
                             .multilineTextAlignment(.center)
-                            .foregroundColor(.gray)
+                            .foregroundColor(.primaryGreen)
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "banknote.fill")
+                                .foregroundColor(.orange)
+                            Text("Pay when you pick up your order")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.orange)
+                        }
+                        .padding(.top, 8)
                     }
                     .padding(.horizontal)
                     
-                    // Order Info
-                    if let order = order {
-                        VStack(spacing: 8) {
-                            Text("Order ID")
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                            
-                            Text(order.id.prefix(8).uppercased())
-                                .font(.title3)
-                                .fontWeight(.bold)
+                    // Order Info Card
+                    VStack(spacing: 12) {
+                        HStack {
+                            Image(systemName: "receipt")
                                 .foregroundColor(.primaryGreen)
+                            Text("Order Confirmed")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                        
+                        Divider()
+                        
+                        if let order = order {
+                            HStack {
+                                Text("Order ID")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                Spacer()
+                                Text("#\(order.id.prefix(8).uppercased())")
+                                    .font(.subheadline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primaryGreen)
+                            }
                             
                             if let total = order.totalAmount {
-                                Text("Total: $\(total, specifier: "%.2f")")
-                                    .font(.headline)
-                                    .foregroundColor(.darkGreen)
+                                HStack {
+                                    Text("Total")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                    Spacer()
+                                    Text("$\(total, specifier: "%.2f")")
+                                        .font(.headline)
+                                        .foregroundColor(.darkGreen)
+                                }
                             }
                         }
-                        .padding()
-                        .background(Color.white)
-                        .cornerRadius(16)
+                        
+                        HStack {
+                            Text("Status")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(Color.orange)
+                                    .frame(width: 8, height: 8)
+                                Text("Pending")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.orange)
+                            }
+                        }
+                        
+                        HStack {
+                            Text("Payment")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            Spacer()
+                            Text("Pay at Pickup")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.blue)
+                        }
                     }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                    .padding(.horizontal)
+                    
+                    // Tip to check orders
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundColor(.blue)
+                        Text("View the Orders tab to track your order status")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
                     
                     Spacer()
                     
-                    // Buttons
+                    // Button
                     VStack(spacing: 12) {
                         PrimaryButton(title: "Continue Shopping") {
                             cartViewModel.resetOrderPlaced()
-                            dismiss()
+                            onContinueShopping()
                         }
                     }
                     .padding(.horizontal)
@@ -356,6 +444,7 @@ struct OrderCompleteView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .interactiveDismissDisabled() // Prevent swipe to dismiss
         }
     }
 }

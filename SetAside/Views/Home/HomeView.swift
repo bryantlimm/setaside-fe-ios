@@ -10,8 +10,14 @@ struct HomeView: View {
     @EnvironmentObject var productViewModel: ProductViewModel
     @EnvironmentObject var cartViewModel: CartViewModel
     
+    @Binding var hideTabBar: Bool
     @State private var showCart = false
+    @State private var showCheckout = false
     @State private var selectedProduct: Product?
+    
+    init(hideTabBar: Binding<Bool> = .constant(false)) {
+        self._hideTabBar = hideTabBar
+    }
     
     var body: some View {
         NavigationStack {
@@ -45,6 +51,13 @@ struct HomeView: View {
             }
             .navigationDestination(isPresented: $showCart) {
                 CartView()
+                    .onAppear { hideTabBar = true }
+                    .onDisappear { hideTabBar = false }
+            }
+            .navigationDestination(isPresented: $showCheckout) {
+                CheckoutView()
+                    .onAppear { hideTabBar = true }
+                    .onDisappear { hideTabBar = false }
             }
             .sheet(item: $selectedProduct) { product in
                 ProductDetailView(product: product)
@@ -200,9 +213,16 @@ struct HomeView: View {
                     spacing: 16
                 ) {
                     ForEach(productViewModel.products) { product in
-                        ProductCard(product: product) {
-                            selectedProduct = product
-                        }
+                        ProductCard(
+                            product: product,
+                            onTap: {
+                                selectedProduct = product
+                            },
+                            onBuyNow: {
+                                cartViewModel.addToCart(product: product)
+                                showCheckout = true
+                            }
+                        )
                         .onAppear {
                             productViewModel.loadMoreIfNeeded(currentProduct: product)
                         }
@@ -238,6 +258,7 @@ struct CategoryChip: View {
 struct ProductCard: View {
     let product: Product
     var onTap: () -> Void
+    var onBuyNow: () -> Void
     @EnvironmentObject var cartViewModel: CartViewModel
     
     var body: some View {
@@ -280,7 +301,7 @@ struct ProductCard: View {
                     .lineLimit(2)
                     .foregroundColor(.primary)
                 
-                Text("$\(product.price, specifier: "%.2f")")
+                Text(String(format: "$%.2f", product.price))
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .foregroundColor(.primaryGreen)
@@ -292,25 +313,43 @@ struct ProductCard: View {
                 }
             }
             
-            // Add to Cart Button
-            Button(action: {
-                cartViewModel.addToCart(product: product)
-            }) {
-                HStack {
-                    if cartViewModel.isInCart(product) {
-                        Text("In Cart (\(cartViewModel.getQuantity(for: product)))")
-                    } else {
-                        Image(systemName: "plus")
-                        Text("Add")
+            // Action Buttons
+            VStack(spacing: 6) {
+                // Add to Cart Button
+                Button(action: {
+                    cartViewModel.addToCart(product: product)
+                }) {
+                    HStack {
+                        if cartViewModel.isInCart(product) {
+                            Text("In Cart (\(cartViewModel.getQuantity(for: product)))")
+                        } else {
+                            Image(systemName: "plus")
+                            Text("Add")
+                        }
                     }
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(cartViewModel.isInCart(product) ? Color.primaryGreen : Color.lightGreen)
+                    .foregroundColor(cartViewModel.isInCart(product) ? .white : .primaryGreen)
+                    .cornerRadius(8)
                 }
-                .font(.caption)
-                .fontWeight(.semibold)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(cartViewModel.isInCart(product) ? Color.primaryGreen : Color.lightGreen)
-                .foregroundColor(cartViewModel.isInCart(product) ? .white : .primaryGreen)
-                .cornerRadius(8)
+                
+                // Buy Now Button
+                Button(action: onBuyNow) {
+                    HStack {
+                        Image(systemName: "bolt.fill")
+                        Text("Buy Now")
+                    }
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(Color.primaryGreen)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                }
             }
         }
         .padding(12)
@@ -321,7 +360,7 @@ struct ProductCard: View {
 }
 
 #Preview {
-    HomeView()
+    HomeView(hideTabBar: .constant(false))
         .environmentObject(AuthViewModel())
         .environmentObject(ProductViewModel())
         .environmentObject(CartViewModel())

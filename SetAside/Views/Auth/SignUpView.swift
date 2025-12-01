@@ -142,7 +142,7 @@ struct SignUpView: View {
             }
             
             // Password requirements hint
-            Text("Password must be at least 8 characters with uppercase, lowercase, and number")
+            Text("Password must be at least 8 characters with uppercase, lowercase, number, and special character (e.g., !@#$)")
                 .font(.caption)
                 .foregroundColor(.gray)
             

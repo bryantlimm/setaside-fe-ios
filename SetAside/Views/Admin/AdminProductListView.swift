@@ -145,52 +145,77 @@ struct AdminProductRow: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 case .failure(_):
-                    Image(systemName: "photo")
-                        .foregroundColor(.gray)
+                    ZStack {
+                        Color.gray.opacity(0.1)
+                        Image(systemName: "photo")
+                            .foregroundColor(.gray)
+                    }
                 case .empty:
-                    ProgressView()
+                    ZStack {
+                        Color.gray.opacity(0.1)
+                        ProgressView()
+                    }
                 @unknown default:
-                    Image(systemName: "photo")
-                        .foregroundColor(.gray)
+                    ZStack {
+                        Color.gray.opacity(0.1)
+                        Image(systemName: "photo")
+                            .foregroundColor(.gray)
+                    }
                 }
             }
             .frame(width: 60, height: 60)
             .background(Color.gray.opacity(0.1))
             .cornerRadius(8)
+            .clipped()
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(product.name)
                     .font(.headline)
                     .lineLimit(1)
                 
-                Text(product.category)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(4)
+                HStack(spacing: 8) {
+                    Text(product.category)
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Color.primaryGreen)
+                        .cornerRadius(4)
+                    
+                    // Availability Badge
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(product.isAvailable ? Color.green : Color.red)
+                            .frame(width: 6, height: 6)
+                        Text(product.isAvailable ? "Available" : "Unavailable")
+                            .font(.caption2)
+                            .foregroundColor(product.isAvailable ? .green : .red)
+                    }
+                }
                 
                 HStack {
                     Text(String(format: "$%.2f", product.price))
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundColor(.green)
+                        .foregroundColor(.primaryGreen)
                     
                     Spacer()
                     
-                    Text("Stock: \(product.stockQuantity ?? 0)")
-                        .font(.caption)
-                        .foregroundColor((product.stockQuantity ?? 0) > 0 ? .primary : .red)
+                    HStack(spacing: 4) {
+                        Image(systemName: "cube.box")
+                            .font(.caption2)
+                        Text("Stock: \(product.stockQuantity ?? 0)")
+                            .font(.caption)
+                    }
+                    .foregroundColor((product.stockQuantity ?? 0) > 10 ? .primary : ((product.stockQuantity ?? 0) > 0 ? .orange : .red))
                 }
             }
             
             Spacer()
             
-            // Availability indicator
-            Circle()
-                .fill(product.isAvailable ? Color.green : Color.red)
-                .frame(width: 12, height: 12)
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.gray)
         }
         .padding(.vertical, 4)
     }

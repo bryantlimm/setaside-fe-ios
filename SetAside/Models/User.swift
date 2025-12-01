@@ -10,7 +10,7 @@ struct User: Codable, Identifiable {
     let email: String
     let fullName: String
     let phone: String?
-    let role: String
+    let role: String?
     let createdAt: String?
     let updatedAt: String?
     
@@ -53,6 +53,17 @@ struct RegisterRequest: Codable {
         case password
         case fullName = "full_name"
         case phone
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(email, forKey: .email)
+        try container.encode(password, forKey: .password)
+        try container.encode(fullName, forKey: .fullName)
+        // Only encode phone if it has a value
+        if let phone = phone, !phone.isEmpty {
+            try container.encode(phone, forKey: .phone)
+        }
     }
 }
 

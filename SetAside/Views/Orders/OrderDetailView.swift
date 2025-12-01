@@ -163,9 +163,42 @@ struct OrderDetailView: View {
             // Date
             infoRow(icon: "calendar", title: "Placed on", value: order.formattedDate)
             
+            // Payment Method
+            HStack {
+                Image(systemName: order.status == "picked_up" ? "checkmark.circle.fill" : "banknote.fill")
+                    .foregroundColor(order.status == "picked_up" ? .green : .blue)
+                    .frame(width: 24)
+                
+                Text("Payment")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                
+                Spacer()
+                
+                Text(order.status == "picked_up" ? "Paid" : "Pay at Pickup")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(order.status == "picked_up" ? .green : .blue)
+            }
+            
             // Pickup Time
-            if let pickupTime = order.pickupTime {
-                infoRow(icon: "clock", title: "Scheduled Pickup", value: pickupTime)
+            if let pickupTime = order.pickupTime, !pickupTime.isEmpty {
+                HStack {
+                    Image(systemName: "calendar.badge.clock")
+                        .foregroundColor(.purple)
+                        .frame(width: 24)
+                    
+                    Text("Scheduled Pickup")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                    
+                    Spacer()
+                    
+                    Text(formatPickupTime(pickupTime))
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.purple)
+                }
             }
             
             // Notes
@@ -203,6 +236,27 @@ struct OrderDetailView: View {
         .padding()
         .background(Color.white)
         .cornerRadius(16)
+    }
+    
+    private func formatPickupTime(_ dateString: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        if let date = formatter.date(from: dateString) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d, h:mm a"
+            return displayFormatter.string(from: date)
+        }
+        
+        // Try without fractional seconds
+        formatter.formatOptions = [.withInternetDateTime]
+        if let date = formatter.date(from: dateString) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d, h:mm a"
+            return displayFormatter.string(from: date)
+        }
+        
+        return dateString
     }
     
     private func infoRow(icon: String, title: String, value: String) -> some View {
@@ -346,6 +400,7 @@ struct OrderDetailView: View {
         pickupTime: nil,
         totalAmount: 25.99,
         items: [],
+        customer: nil,
         createdAt: "2024-01-15T10:30:00Z",
         updatedAt: nil
     ))
