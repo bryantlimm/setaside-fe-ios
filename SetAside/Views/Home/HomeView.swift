@@ -48,6 +48,7 @@ struct HomeView: View {
                         .padding(.bottom, 100)
                     }
                 }
+                .ignoresSafeArea(edges: .top)
             }
             .navigationDestination(isPresented: $showCart) {
                 CartView()
@@ -70,50 +71,54 @@ struct HomeView: View {
     
     // MARK: - Header View
     private var headerView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Hello,")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
-                Text(authViewModel.currentUser?.fullName ?? "Guest")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-            }
-            
-            Spacer()
-            
-            // Cart Button
-            Button(action: { showCart = true }) {
-                ZStack(alignment: .topTrailing) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white.opacity(0.2))
-                        .frame(width: 44, height: 44)
-                    
-                    Image("cart")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
+        Group {
+            let topSafeArea = UIApplication.shared.windows.first?.safeAreaInsets.top ?? 0
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Hello,")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.9))
+                    Text(authViewModel.currentUser?.fullName ?? "Guest")
+                        .font(.title2)
+                        .fontWeight(.bold)
                         .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
-                    
-                    // Badge
-                    if cartViewModel.itemCount > 0 {
-                        Text("\(cartViewModel.itemCount)")
-                            .font(.caption2)
-                            .fontWeight(.bold)
+                }
+                
+                Spacer()
+                
+                // Cart Button
+                Button(action: { showCart = true }) {
+                    ZStack(alignment: .topTrailing) {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.2))
+                            .frame(width: 44, height: 44)
+                        
+                        Image("cart")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
                             .foregroundColor(.white)
-                            .padding(4)
-                            .background(Color.red)
-                            .clipShape(Circle())
-                            .offset(x: 6, y: -6)
+                            .frame(width: 44, height: 44)
+                        
+                        // Badge
+                        if cartViewModel.itemCount > 0 {
+                            Text("\(cartViewModel.itemCount)")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(4)
+                                .background(Color.red)
+                                .clipShape(Circle())
+                                .offset(x: 6, y: -6)
+                        }
                     }
                 }
             }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .padding(.top, 40)
+            .background(Color.darkGreen)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(Color.darkGreen)
     }
     
     // MARK: - Search Bar
