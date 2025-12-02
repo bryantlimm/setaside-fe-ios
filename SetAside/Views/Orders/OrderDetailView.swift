@@ -201,8 +201,8 @@ struct OrderDetailView: View {
             
             // Payment Method
             HStack {
-                Image(systemName: displayOrder.status == "picked_up" ? "checkmark.circle.fill" : "banknote.fill")
-                    .foregroundColor(displayOrder.status == "picked_up" ? .green : .blue)
+                Image(systemName: displayOrder.status == "pickedup" ? "checkmark.circle.fill" : "banknote.fill")
+                    .foregroundColor(displayOrder.status == "pickedup" ? .green : .blue)
                     .frame(width: 24)
                 
                 Text("Payment")
@@ -211,10 +211,10 @@ struct OrderDetailView: View {
                 
                 Spacer()
                 
-                Text(displayOrder.status == "picked_up" ? "Paid" : "Pay at Pickup")
+                Text(displayOrder.status == "pickedup" ? "Paid" : "Pay at Pickup")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundColor(displayOrder.status == "picked_up" ? .green : .blue)
+                    .foregroundColor(displayOrder.status == "pickedup" ? .green : .blue)
             }
             
             // Pickup Time

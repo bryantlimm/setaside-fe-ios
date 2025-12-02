@@ -182,10 +182,10 @@ class OrderViewModel: ObservableObject {
     }
     
     var completedOrders: [Order] {
-        orders.filter { $0.status == "picked_up" }
+        orders.filter { $0.status == "pickedup" }
     }
     
     var activeOrders: [Order] {
-        orders.filter { $0.status != "picked_up" }
+        orders.filter { $0.status != "pickedup" }
     }
 }

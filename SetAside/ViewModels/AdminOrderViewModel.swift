@@ -15,36 +15,40 @@ class AdminOrderViewModel: ObservableObject {
     @Published var showCompletionModal = false
     @Published var completedOrderId: String?
     
-    // Simplified to 2 active stages: pending -> ready, plus completed history
-    let orderStatuses = ["pending", "ready", "picked_up"]
+    // Full 5-stage flow: pending -> preparing -> ready -> pickedup -> completed
+    let orderStatuses = ["pending", "preparing", "ready", "pickedup", "completed"]
     
     private let orderService = OrderService.shared
     
     var filteredOrders: [Order] {
         if selectedStatus == "all" {
-            // Show only active orders (not picked up) in "All" tab
-            return orders.filter { $0.status != "picked_up" }
+            // Show only active orders (not completed) in "Active" tab
+            return orders.filter { $0.status != "completed" }
         }
-        // Combine pending and preparing under "pending" filter
-        if selectedStatus == "pending" {
-            return orders.filter { $0.status == "pending" || $0.status == "preparing" }
-        }
-        if selectedStatus == "picked_up" {
-            return orders.filter { $0.status == "picked_up" }
+        if selectedStatus == "completed" {
+            return orders.filter { $0.status == "completed" }
         }
         return orders.filter { $0.status == selectedStatus }
     }
     
     var pendingOrders: [Order] {
-        orders.filter { $0.status == "pending" || $0.status == "preparing" }
+        orders.filter { $0.status == "pending" }
+    }
+    
+    var preparingOrders: [Order] {
+        orders.filter { $0.status == "preparing" }
     }
     
     var readyOrders: [Order] {
         orders.filter { $0.status == "ready" }
     }
     
+    var pickedUpOrders: [Order] {
+        orders.filter { $0.status == "pickedup" }
+    }
+    
     var completedOrders: [Order] {
-        orders.filter { $0.status == "picked_up" }
+        orders.filter { $0.status == "completed" }
     }
     
     func loadAllOrders() async {
@@ -109,9 +113,41 @@ class AdminOrderViewModel: ObservableObject {
     
     func getNextStatus(currentStatus: String) -> String? {
         switch currentStatus {
-        case "pending", "preparing": return "ready"
-        // "ready" is the final status - no more transitions
-        default: return nil
+        case "pending": return "preparing"      // Start Preparing
+        case "preparing": return "ready"        // Order is Ready
+        case "ready": return "pickedup"        // Customer Picked Up
+        case "pickedup": return "completed"    // Complete Order
+        default: return nil                      // completed is final
+        }
+    }
+    
+    func getButtonLabel(for status: String) -> String {
+        switch status {
+        case "pending": return "Start Preparing"
+        case "preparing": return "Order is Ready"
+        case "ready": return "Customer Picked Up"
+        case "pickedup": return "Complete Order"
+        default: return ""
+        }
+    }
+    
+    func getButtonIcon(for status: String) -> String {
+        switch status {
+        case "pending": return "flame.fill"
+        case "preparing": return "checkmark.circle.fill"
+        case "ready": return "bag.fill"
+        case "pickedup": return "checkmark.seal.fill"
+        default: return "checkmark"
+        }
+    }
+    
+    func getButtonColor(for status: String) -> String {
+        switch status {
+        case "pending": return "orange"        // Start preparing - orange
+        case "preparing": return "blue"        // Mark ready - blue  
+        case "ready": return "purple"          // Picked up - purple
+        case "pickedup": return "green"       // Complete - green
+        default: return "gray"
         }
     }
     
@@ -129,26 +165,27 @@ class AdminOrderViewModel: ObservableObject {
         successMessage = nil
     }
     
-    /// Mark order as picked up and show completion modal
-    func markOrderCompleted(orderId: String) {
-        // Remove from local list immediately for smooth UX
-        orders.removeAll { $0.id == orderId }
-        completedOrderId = orderId
-        showCompletionModal = true
+    /// Mark order as completed and show completion modal
+    func markOrderCompleted(orderId: String) async -> Bool {
+        isLoading = true
         
-        // Update status on backend (fire and forget - order already removed from UI)
-        Task {
-            do {
-                let _ = try await orderService.updateOrderStatus(id: orderId, status: "picked_up")
-                #if DEBUG
-                print("✅ Order \(orderId.prefix(8)) marked as picked up on backend")
-                #endif
-            } catch {
-                #if DEBUG
-                print("⚠️ Failed to update order status on backend: \(error)")
-                #endif
-                // Don't show error to user - the UI already shows success
-            }
+        do {
+            let _ = try await orderService.updateOrderStatus(id: orderId, status: "completed")
+            completedOrderId = orderId
+            showCompletionModal = true
+            await loadAllOrders()
+            isLoading = false
+            #if DEBUG
+            print("✅ Order \(orderId.prefix(8)) marked as completed")
+            #endif
+            return true
+        } catch {
+            #if DEBUG
+            print("⚠️ Failed to update order status: \(error)")
+            #endif
+            errorMessage = "Failed to complete order"
+            isLoading = false
+            return false
         }
     }
     

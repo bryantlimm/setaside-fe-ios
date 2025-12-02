@@ -208,12 +208,12 @@ struct OrderRow: View {
                         
                         // Payment Status
                         HStack(spacing: 4) {
-                            Image(systemName: order.status == "picked_up" ? "checkmark.circle.fill" : "banknote.fill")
+                            Image(systemName: order.status == "pickedup" ? "checkmark.circle.fill" : "banknote.fill")
                                 .font(.caption)
-                            Text(order.status == "picked_up" ? "Paid" : "Pay at Pickup")
+                            Text(order.status == "pickedup" ? "Paid" : "Pay at Pickup")
                                 .font(.caption)
                         }
-                        .foregroundColor(order.status == "picked_up" ? .green : .blue)
+                        .foregroundColor(order.status == "pickedup" ? .green : .blue)
                     }
                 } else {
                     // Fallback when items not available in list view
@@ -226,12 +226,12 @@ struct OrderRow: View {
                         
                         // Payment Status
                         HStack(spacing: 4) {
-                            Image(systemName: order.status == "picked_up" ? "checkmark.circle.fill" : "banknote.fill")
+                            Image(systemName: order.status == "pickedup" ? "checkmark.circle.fill" : "banknote.fill")
                                 .font(.caption)
-                            Text(order.status == "picked_up" ? "Paid" : "Pay at Pickup")
+                            Text(order.status == "pickedup" ? "Paid" : "Pay at Pickup")
                                 .font(.caption)
                         }
-                        .foregroundColor(order.status == "picked_up" ? .green : .blue)
+                        .foregroundColor(order.status == "pickedup" ? .green : .blue)
                     }
                 }
                 

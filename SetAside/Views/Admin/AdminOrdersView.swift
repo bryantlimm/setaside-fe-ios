@@ -73,7 +73,7 @@ struct AdminOrdersView: View {
                     HStack(spacing: 12) {
                         StatusFilterButton(
                             title: "Active",
-                            count: viewModel.pendingOrders.count + viewModel.readyOrders.count,
+                            count: viewModel.pendingOrders.count + viewModel.preparingOrders.count + viewModel.readyOrders.count + viewModel.pickedUpOrders.count,
                             isSelected: viewModel.selectedStatus == "all",
                             color: .primary
                         ) {
@@ -90,6 +90,15 @@ struct AdminOrdersView: View {
                         }
                         
                         StatusFilterButton(
+                            title: "Preparing",
+                            count: viewModel.preparingOrders.count,
+                            isSelected: viewModel.selectedStatus == "preparing",
+                            color: .yellow
+                        ) {
+                            viewModel.selectedStatus = "preparing"
+                        }
+                        
+                        StatusFilterButton(
                             title: "Ready",
                             count: viewModel.readyOrders.count,
                             isSelected: viewModel.selectedStatus == "ready",
@@ -99,12 +108,21 @@ struct AdminOrdersView: View {
                         }
                         
                         StatusFilterButton(
+                            title: "Picked Up",
+                            count: viewModel.pickedUpOrders.count,
+                            isSelected: viewModel.selectedStatus == "pickedup",
+                            color: .purple
+                        ) {
+                            viewModel.selectedStatus = "pickedup"
+                        }
+                        
+                        StatusFilterButton(
                             title: "Completed",
                             count: viewModel.completedOrders.count,
-                            isSelected: viewModel.selectedStatus == "picked_up",
+                            isSelected: viewModel.selectedStatus == "completed",
                             color: .green
                         ) {
-                            viewModel.selectedStatus = "picked_up"
+                            viewModel.selectedStatus = "completed"
                         }
                     }
                     .padding(.horizontal)
@@ -289,27 +307,53 @@ struct AdminOrderRow: View {
     
     var statusColor: Color {
         switch order.status {
-        case "pending", "preparing": return .orange
+        case "pending": return .orange
+        case "preparing": return .yellow
         case "ready": return .blue
-        case "picked_up": return .green
-        default: return .gray
-        }
-    }
-    
-    var actionButtonColor: Color {
-        switch order.status {
-        case "pending", "preparing": return .blue  // "Ready for Pickup" button
-        case "ready": return .green  // "Complete Order" button
+        case "pickedup": return .purple
+        case "completed": return .green
         default: return .gray
         }
     }
     
     var displayStatus: String {
         switch order.status {
-        case "pending", "preparing": return "Pending"
+        case "pending": return "Pending"
+        case "preparing": return "Preparing"
         case "ready": return "Ready"
-        case "picked_up": return "Completed"
+        case "pickedup": return "Picked Up"
+        case "completed": return "Completed"
         default: return order.status.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+    
+    var buttonColor: Color {
+        switch order.status {
+        case "pending": return .orange       // Start Preparing
+        case "preparing": return .blue       // Order is Ready
+        case "ready": return .purple         // Customer Picked Up
+        case "pickedup": return .green      // Complete Order
+        default: return .gray
+        }
+    }
+    
+    var buttonIcon: String {
+        switch order.status {
+        case "pending": return "flame.fill"
+        case "preparing": return "checkmark.circle.fill"
+        case "ready": return "bag.fill"
+        case "pickedup": return "checkmark.seal.fill"
+        default: return "checkmark"
+        }
+    }
+    
+    var buttonLabel: String {
+        switch order.status {
+        case "pending": return "Start Preparing"
+        case "preparing": return "Order is Ready"
+        case "ready": return "Customer Picked Up"
+        case "pickedup": return "Complete Order"
+        default: return ""
         }
     }
     
@@ -484,38 +528,20 @@ struct AdminOrderRow: View {
             .background(Color.gray.opacity(0.05))
             .cornerRadius(8)
             
-            // Quick Action Button - Separate from items
+            // Quick Action Button - Based on current status
             if let nextStatus = viewModel.getNextStatus(currentStatus: order.status) {
                 Button {
                     onStatusUpdate(order.id, nextStatus)
                 } label: {
                     HStack {
-                        Image(systemName: "shippingbox.fill")
-                        Text("Mark Ready for Pickup")
+                        Image(systemName: buttonIcon)
+                        Text(buttonLabel)
                     }
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-                }
-                .buttonStyle(PlainButtonStyle())
-            } else if order.status == "ready" {
-                // Show "Complete Order" button for ready orders
-                Button {
-                    viewModel.markOrderCompleted(orderId: order.id)
-                } label: {
-                    HStack {
-                        Image(systemName: "checkmark.seal.fill")
-                        Text("Customer Picked Up")
-                    }
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.green)
+                    .background(buttonColor)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                 }

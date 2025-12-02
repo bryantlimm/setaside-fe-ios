@@ -19,7 +19,7 @@ enum AppConstants {
         case pending = "pending"
         case preparing = "preparing"
         case ready = "ready"
-        case pickedUp = "picked_up"
+        case pickedUp = "pickedup"
         
         var displayName: String {
             switch self {
