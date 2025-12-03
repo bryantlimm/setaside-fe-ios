@@ -151,33 +151,44 @@ struct AddEditProductView: View {
                     } label: {
                         HStack {
                             Spacer()
-                            if !viewModel.isLoading {
+                            if viewModel.isLoading {
                                 ProgressView()
+                                    .tint(.white)
                                     .padding(.trailing, 8)
                                 Text("Saving...")
                             } else {
+                                Image(systemName: isEditing ? "checkmark.circle.fill" : "plus.circle.fill")
                                 Text(isEditing ? "Update Product" : "Create Product")
                             }
                             Spacer()
                         }
+                        .fontWeight(.semibold)
                     }
                     .disabled(!isFormValid || viewModel.isLoading)
                     .foregroundColor(isFormValid && !viewModel.isLoading ? .white : .gray)
-                    .listRowBackground(isFormValid && !viewModel.isLoading ? Color.green : Color.gray.opacity(0.3))
-                    if isEditing {
-                        Section {
-                            Button(role: .destructive) {
-                                showDeleteConfirmation = true
-                            } label: {
-                                HStack {
-                                    Spacer()
-                                    Text("Delete Product")
-                                    Spacer()
-                                }
+                    .listRowBackground(isFormValid && !viewModel.isLoading ? Color.primaryGreen : Color.gray.opacity(0.3))
+                }
+                
+                // Delete Button (only shown when editing)
+                if isEditing {
+                    Section {
+                        Button(role: .destructive) {
+                            showDeleteConfirmation = true
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Image(systemName: "trash.fill")
+                                Text("Delete Product")
+                                Spacer()
                             }
-                            .foregroundColor(.white)
-                            .listRowBackground(Color.red)
+                            .fontWeight(.semibold)
                         }
+                        .foregroundColor(.white)
+                        .listRowBackground(Color.red)
+                    } footer: {
+                        Text("This action cannot be undone. The product will be permanently removed.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
