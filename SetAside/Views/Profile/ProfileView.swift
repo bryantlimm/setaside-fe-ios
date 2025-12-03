@@ -17,23 +17,42 @@ struct ProfileView: View {
                 Color.backgroundGreen
                     .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Profile Header
-                        profileHeader
-                        
-                        // Account Section
-                        accountSection
-                        
-                        // App Info Section
-                        appInfoSection
-                        
-                        // Logout Button
-                        logoutButton
-                        
-                        Spacer(minLength: 100)
+                VStack(spacing: 0) {
+                    // Green Header
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("My Profile")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                            Text("Manage your account")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                        Spacer()
                     }
-                    .padding()
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.primaryGreen)
+                    
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            // Profile Header
+                            profileHeader
+                            
+                            // Account Section
+                            accountSection
+                            
+                            // App Info Section
+                            appInfoSection
+                            
+                            // Logout Button
+                            logoutButton
+                            
+                            Spacer(minLength: 100)
+                        }
+                        .padding()
+                    }
                 }
             }
             .sheet(isPresented: $showEditProfile) {

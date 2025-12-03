@@ -49,7 +49,7 @@ class OrderService {
     }
     
     /// Get all orders (Staff only - returns all orders in the system)
-    func getAllOrders(page: Int = 1, limit: Int = 100) async throws -> [Order] {
+    func getAllOrders(page: Int = 1, limit: Int = 1000) async throws -> [Order] {
         let endpoint = "/orders?page=\(page)&limit=\(limit)"
         
         #if DEBUG
