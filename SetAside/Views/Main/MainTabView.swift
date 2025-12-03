@@ -31,10 +31,12 @@ struct MainTabView: View {
                     case 1:
                         AdminProductListView()
                     case 2:
-                        HomeView(hideTabBar: $hideTabBar)
-                            .environmentObject(productViewModel)
-                    case 3:
                         ProfileView()
+//                        in case mau debugging:
+//                        HomeView(hideTabBar: $hideTabBar)
+//                            .environmentObject(productViewModel)
+//                    case 3:
+//                        ProfileView()
                     default:
                         AdminOrdersView()
                     }
@@ -125,18 +127,19 @@ struct MainTabView: View {
             TabBarItem(
                 icon: "home",
                 title: "Shop",
-                isSelected: selectedTab == 2
-            ) {
-                selectedTab = 2
-            }
-            
-            TabBarItem(
-                icon: "account",
-                title: "Profile",
                 isSelected: selectedTab == 3
             ) {
                 selectedTab = 3
             }
+            
+//           for debugging purposes hehe (kalo bisa jangan di hapus)
+//            TabBarItem(
+//                icon: "account",
+//                title: "Profile",
+//                isSelected: selectedTab == 3
+//            ) {
+//                selectedTab = 3
+//            }
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 16)

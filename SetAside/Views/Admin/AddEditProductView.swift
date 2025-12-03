@@ -19,6 +19,8 @@ struct AddEditProductView: View {
     @State private var isAvailable: Bool = true
     @State private var imageUrl: String = ""
     
+    @State private var selectedCategoryOption: String = ""
+    
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var isSuccess = false
@@ -28,11 +30,13 @@ struct AddEditProductView: View {
     }
     
     var isFormValid: Bool {
-        !name.isEmpty && 
-        !description.isEmpty && 
-        Double(priceText) != nil && 
-        Int(stockText) != nil && 
-        !category.isEmpty
+        let finalCategory = selectedCategoryOption == "Other" ? category : selectedCategoryOption
+        
+        return !name.isEmpty &&
+        !description.isEmpty &&
+        Double(priceText) != nil &&
+        Int(stockText) != nil &&
+        !finalCategory.isEmpty
     }
     
     var body: some View {
@@ -47,6 +51,7 @@ struct AddEditProductView: View {
                     TextField("Description", text: $description, axis: .vertical)
                         .lineLimit(3...6)
                         .textContentType(.none)
+                        
                     
                     // Category picker
                     if viewModel.categories.isEmpty {
@@ -54,10 +59,30 @@ struct AddEditProductView: View {
                             .textContentType(.none)
                             .autocorrectionDisabled()
                     } else {
-                        Picker("Category", selection: $category) {
-                            Text("Select Category").tag("")
-                            ForEach(viewModel.categories, id: \.self) { cat in
-                                Text(cat.capitalized).tag(cat)
+                        VStack(alignment: .leading) {
+                            Picker("Category", selection: $selectedCategoryOption) {
+                                Text("Select Category").tag("")
+                                ForEach(viewModel.categories, id: \.self) { cat in
+                                    Text(cat.capitalized).tag(cat)
+                                }
+                                Text("Other").tag("Other")
+                            }
+                            
+                            if selectedCategoryOption == "Other" {
+                                TextField("Enter custom category", text: $category)
+                                    .textContentType(.none)
+                                    .autocorrectionDisabled()
+                                    .textFieldStyle(.roundedBorder)
+                                    .padding(.leading, 12)
+                            }
+                        }
+                        .onChange(of: selectedCategoryOption) { newValue in
+                            if newValue == "Other" {
+                                if viewModel.categories.contains(category) {
+                                    category = ""
+                                }
+                            } else {
+                                category = newValue
                             }
                         }
                     }
@@ -173,8 +198,18 @@ struct AddEditProductView: View {
             category = product.category ?? ""
             isAvailable = product.isAvailable ?? true
             imageUrl = product.imageUrl ?? ""
+            
+            if viewModel.categories.contains(category) {
+                selectedCategoryOption = category
+            } else if !category.isEmpty {
+                selectedCategoryOption = "Other"
+            } else {
+                selectedCategoryOption = ""
+            }
+            
         } else if let firstCategory = viewModel.categories.first {
             category = firstCategory
+            selectedCategoryOption = firstCategory
         }
     }
     

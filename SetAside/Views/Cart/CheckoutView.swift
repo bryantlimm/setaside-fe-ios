@@ -9,6 +9,12 @@ struct CheckoutView: View {
     @EnvironmentObject var cartViewModel: CartViewModel
     @Environment(\.dismiss) var dismiss
     
+    @Binding var hideTabBar: Bool
+    
+    init(hideTabBar: Binding<Bool> = .constant(true)) {
+        self._hideTabBar = hideTabBar
+    }
+    
     @State private var orderNotes: String = ""
     @State private var pickupTime: Date = Date().addingTimeInterval(3600) // 1 hour from now
     @State private var useScheduledPickup: Bool = false
@@ -216,6 +222,9 @@ struct CheckoutView: View {
                         .fontWeight(.semibold)
                 }
             }
+        }
+        .onAppear {
+            hideTabBar = true
         }
         .alert("Error", isPresented: $cartViewModel.showError) {
             Button("OK") {
@@ -445,7 +454,7 @@ struct OrderCompleteView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .interactiveDismissDisabled() // Prevent swipe to dismiss
+            .interactiveDismissDisabled()
         }
     }
 }

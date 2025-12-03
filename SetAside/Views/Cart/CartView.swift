@@ -8,7 +8,14 @@ import SwiftUI
 struct CartView: View {
     @EnvironmentObject var cartViewModel: CartViewModel
     @Environment(\.dismiss) var dismiss
+    
+    @Binding var hideTabBar: Bool
+    
     @State private var showCheckout = false
+    
+    init(hideTabBar: Binding<Bool> = .constant(true)) {
+        self._hideTabBar = hideTabBar
+    }
     
     var body: some View {
         ZStack {
@@ -130,12 +137,16 @@ struct CartView: View {
         }
         .navigationDestination(isPresented: $showCheckout) {
             CheckoutView()
+                .onAppear { hideTabBar = true }
+                .onDisappear { hideTabBar = false }
         }
         .onChange(of: showCheckout) { _, isShowing in
-            // When returning from checkout and cart is empty (order was placed), dismiss
             if !isShowing && cartViewModel.isEmpty {
                 dismiss()
             }
+        }
+        .onAppear {
+            hideTabBar = true
         }
     }
 }
