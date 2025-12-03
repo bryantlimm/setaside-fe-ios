@@ -11,6 +11,8 @@ struct AdminOrdersView: View {
     @State private var alertMessage = ""
     @State private var isSuccess = false
     @State private var searchText = ""
+    @State private var showStatusConfirmation = false
+    @State private var pendingStatusUpdate: (orderId: String, newStatus: String, order: Order)?
     
     var searchedOrders: [Order] {
         if searchText.isEmpty {
@@ -157,17 +159,8 @@ struct AdminOrdersView: View {
                     List {
                         ForEach(searchedOrders) { order in
                             AdminOrderRow(order: order, viewModel: viewModel) { orderId, newStatus in
-                                Task {
-                                    let success = await viewModel.updateOrderStatus(orderId: orderId, newStatus: newStatus)
-                                    if success {
-                                        alertMessage = "Order status updated to \(newStatus.replacingOccurrences(of: "_", with: " "))"
-                                        isSuccess = true
-                                    } else {
-                                        alertMessage = viewModel.errorMessage ?? "Failed to update order status"
-                                        isSuccess = false
-                                    }
-                                    showAlert = true
-                                }
+                                pendingStatusUpdate = (orderId, newStatus, order)
+                                showStatusConfirmation = true
                             }
                         }
                     }
@@ -182,6 +175,33 @@ struct AdminOrdersView: View {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(alertMessage)
+            }
+            .overlay {
+                if showStatusConfirmation, let update = pendingStatusUpdate {
+                    StatusUpdateConfirmationModal(
+                        order: update.order,
+                        newStatus: update.newStatus,
+                        onConfirm: {
+                            showStatusConfirmation = false
+                            Task {
+                                let success = await viewModel.updateOrderStatus(orderId: update.orderId, newStatus: update.newStatus)
+                                if success {
+                                    alertMessage = "Order status updated to \(update.newStatus.replacingOccurrences(of: "_", with: " "))"
+                                    isSuccess = true
+                                } else {
+                                    alertMessage = viewModel.errorMessage ?? "Failed to update order status"
+                                    isSuccess = false
+                                }
+                                showAlert = true
+                                pendingStatusUpdate = nil
+                            }
+                        },
+                        onCancel: {
+                            showStatusConfirmation = false
+                            pendingStatusUpdate = nil
+                        }
+                    )
+                }
             }
             .sheet(isPresented: $viewModel.showCompletionModal) {
                 OrderCompletionModal(onDismiss: {
@@ -259,6 +279,140 @@ struct OrderCompletionModal: View {
         }
         .background(Color(.systemBackground))
         .interactiveDismissDisabled()
+    }
+}
+
+// MARK: - Status Update Confirmation Modal
+struct StatusUpdateConfirmationModal: View {
+    let order: Order
+    let newStatus: String
+    let onConfirm: () -> Void
+    let onCancel: () -> Void
+    
+    var statusDisplayName: String {
+        switch newStatus {
+        case "pending": return "Pending"
+        case "preparing": return "Preparing"
+        case "ready": return "Ready"
+        case "pickedup": return "Picked Up"
+        case "completed": return "Completed"
+        default: return newStatus.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+    
+    var statusColor: Color {
+        switch newStatus {
+        case "pending": return .orange
+        case "preparing": return .yellow
+        case "ready": return .blue
+        case "pickedup": return .purple
+        case "completed": return .green
+        default: return .gray
+        }
+    }
+    
+    var statusIcon: String {
+        switch newStatus {
+        case "pending": return "clock.fill"
+        case "preparing": return "flame.fill"
+        case "ready": return "checkmark.circle.fill"
+        case "pickedup": return "bag.fill"
+        case "completed": return "checkmark.seal.fill"
+        default: return "questionmark.circle.fill"
+        }
+    }
+    
+    var statusDescription: String {
+        switch newStatus {
+        case "preparing": return "Start preparing this order?"
+        case "ready": return "Mark order as ready for pickup?"
+        case "pickedup": return "Confirm customer picked up order?"
+        case "completed": return "Mark order as completed?"
+        default: return "Update the order status?"
+        }
+    }
+    
+    var body: some View {
+        ZStack {
+            // Dimmed background
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    onCancel()
+                }
+            
+            // Modal content
+            VStack(spacing: 16) {
+                // Status Icon
+                ZStack {
+                    Circle()
+                        .fill(statusColor.opacity(0.2))
+                        .frame(width: 60, height: 60)
+                    
+                    Image(systemName: statusIcon)
+                        .font(.system(size: 28))
+                        .foregroundColor(statusColor)
+                }
+                
+                // Title
+                Text("Update Status")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                
+                // Order Info
+                Text("Order #\(String(order.id.prefix(8)).uppercased())")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                // New Status Badge
+                Text(statusDisplayName)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(statusColor.opacity(0.2))
+                    .foregroundColor(statusColor)
+                    .cornerRadius(16)
+                
+                // Description
+                Text(statusDescription)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 8)
+                
+                // Action Buttons
+                HStack(spacing: 12) {
+                    Button(action: onCancel) {
+                        Text("Cancel")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemGray5))
+                            .cornerRadius(10)
+                    }
+                    
+                    Button(action: onConfirm) {
+                        Text("Confirm")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(statusColor)
+                            .cornerRadius(10)
+                    }
+                }
+                .padding(.top, 4)
+            }
+            .padding(24)
+            .background(Color(.systemBackground))
+            .cornerRadius(20)
+            .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
+            .padding(.horizontal, 40)
+        }
     }
 }
 
