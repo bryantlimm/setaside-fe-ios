@@ -127,9 +127,9 @@ struct MainTabView: View {
             TabBarItem(
                 icon: "home",
                 title: "Shop",
-                isSelected: selectedTab == 3
+                isSelected: selectedTab == 2
             ) {
-                selectedTab = 3
+                selectedTab = 2
             }
             
 //           for debugging purposes hehe (kalo bisa jangan di hapus)

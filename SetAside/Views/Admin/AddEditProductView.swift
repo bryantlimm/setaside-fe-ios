@@ -25,6 +25,8 @@ struct AddEditProductView: View {
     @State private var alertMessage = ""
     @State private var isSuccess = false
     
+    @State private var showDeleteConfirmation = false
+    
     var isEditing: Bool {
         product != nil
     }
@@ -52,7 +54,6 @@ struct AddEditProductView: View {
                         .lineLimit(3...6)
                         .textContentType(.none)
                         
-                    
                     // Category picker
                     if viewModel.categories.isEmpty {
                         TextField("Category", text: $category)
@@ -150,7 +151,7 @@ struct AddEditProductView: View {
                     } label: {
                         HStack {
                             Spacer()
-                            if viewModel.isLoading {
+                            if !viewModel.isLoading {
                                 ProgressView()
                                     .padding(.trailing, 8)
                                 Text("Saving...")
@@ -163,6 +164,21 @@ struct AddEditProductView: View {
                     .disabled(!isFormValid || viewModel.isLoading)
                     .foregroundColor(isFormValid && !viewModel.isLoading ? .white : .gray)
                     .listRowBackground(isFormValid && !viewModel.isLoading ? Color.green : Color.gray.opacity(0.3))
+                    if isEditing {
+                        Section {
+                            Button(role: .destructive) {
+                                showDeleteConfirmation = true
+                            } label: {
+                                HStack {
+                                    Spacer()
+                                    Text("Delete Product")
+                                    Spacer()
+                                }
+                            }
+                            .foregroundColor(.white)
+                            .listRowBackground(Color.red)
+                        }
+                    }
                 }
             }
             .navigationTitle(isEditing ? "Edit Product" : "Add Product")
@@ -182,6 +198,16 @@ struct AddEditProductView: View {
                 }
             } message: {
                 Text(alertMessage)
+            }
+            .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
+                Button("Delete", role: .destructive) {
+                    Task {
+                        await deleteProduct() // baru anjay bisa delete
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Are you sure you want to permanently delete this product? This action cannot be undone.")
             }
             .onAppear {
                 loadProductData()
@@ -258,6 +284,23 @@ struct AddEditProductView: View {
             isSuccess = false
         }
         showAlert = true
+    }
+    
+//    ges ini baru buat delete product
+    private func deleteProduct() async {
+        guard isEditing, let productID = product?.id else { return }
+        
+        let success = await viewModel.deleteProduct(id: productID)
+        
+        if success {
+            alertMessage = "Product deleted successfully"
+            isSuccess = true
+            showAlert = true
+        } else {
+            alertMessage = viewModel.errorMessage ?? "Failed to delete product"
+            isSuccess = false
+            showAlert = true
+        }
     }
 }
 
