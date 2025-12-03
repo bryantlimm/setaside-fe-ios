@@ -183,11 +183,15 @@ struct AddEditProductView: View {
             }
             .navigationTitle(isEditing ? "Edit Product" : "Add Product")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.primaryGreen, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .foregroundColor(.white)
                 }
             }
             .alert(isSuccess ? "Success" : "Error", isPresented: $showAlert) {

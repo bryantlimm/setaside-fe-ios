@@ -48,11 +48,34 @@ struct AdminOrdersView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Search Bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.gray)
+            ZStack {
+                Color.backgroundGreen
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // Header
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Order Management")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.9))
+                            Text("Track & Update Orders")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.darkGreen)
+                    
+                    // Content
+                    VStack(spacing: 0) {
+                        // Search Bar
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.gray)
                     
                     TextField("Search by name, phone, order ID, or item...", text: $searchText)
                         .textFieldStyle(PlainTextFieldStyle())
@@ -65,10 +88,10 @@ struct AdminOrdersView: View {
                     }
                 }
                 .padding(10)
-                .background(Color(.systemGray6))
+                .background(Color.white)
                 .cornerRadius(10)
                 .padding(.horizontal)
-                .padding(.top, 8)
+                .padding(.top, 12)
                 
                 // Status Filter
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -130,9 +153,7 @@ struct AdminOrdersView: View {
                     .padding(.horizontal)
                     .padding(.vertical, 12)
                 }
-                .background(Color(.systemBackground))
-                
-                Divider()
+                .background(Color.backgroundGreen)
                 
                 // Orders List
                 if viewModel.isLoading && viewModel.orders.isEmpty {
@@ -169,8 +190,11 @@ struct AdminOrdersView: View {
                         await viewModel.loadAllOrders()
                     }
                 }
+                    }
+                    .background(Color.backgroundGreen)
+                }
             }
-            .navigationTitle("Orders")
+            .navigationBarHidden(true)
             .alert(isSuccess ? "Success" : "Error", isPresented: $showAlert) {
                 Button("OK", role: .cancel) { }
             } message: {

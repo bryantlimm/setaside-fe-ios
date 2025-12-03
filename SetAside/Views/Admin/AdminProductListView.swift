@@ -18,8 +18,47 @@ struct AdminProductListView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                if viewModel.isLoading && viewModel.products.isEmpty {
-                    ProgressView("Loading products...")
+                Color.backgroundGreen
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // Header
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Inventory Management")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.9))
+                            Text("Products & Stock")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                        }
+                        Spacer()
+                        Button {
+                            showAddProduct = true
+                        } label: {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white.opacity(0.2))
+                                    .frame(width: 44, height: 44)
+                                
+                                Image(systemName: "plus")
+                                    .font(.title3)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.darkGreen)
+                    
+                    // Content
+                    ZStack {
+                        Color.backgroundGreen
+                        
+                        if viewModel.isLoading && viewModel.products.isEmpty {
+                            ProgressView("Loading products...")
                 } else if let errorMessage = viewModel.errorMessage {
                     VStack(spacing: 16) {
                         Image(systemName: "exclamationmark.triangle")
@@ -82,17 +121,10 @@ struct AdminProductListView: View {
                         await viewModel.loadProducts()
                     }
                 }
-            }
-            .navigationTitle("Products")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showAddProduct = true
-                    } label: {
-                        Image(systemName: "plus")
                     }
                 }
             }
+            .navigationBarHidden(true)
             .sheet(isPresented: $showAddProduct) {
                 AddEditProductView(viewModel: viewModel, product: nil)
             }
