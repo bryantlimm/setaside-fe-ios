@@ -11,7 +11,7 @@ struct CheckoutView: View {
     
     @Binding var hideTabBar: Bool
     
-    init(hideTabBar: Binding<Bool> = .constant(true)) {
+    init(hideTabBar: Binding<Bool>) {
         self._hideTabBar = hideTabBar
     }
     
@@ -225,6 +225,10 @@ struct CheckoutView: View {
         }
         .onAppear {
             hideTabBar = true
+        }
+        .onDisappear {
+            // Always show tab bar when leaving checkout
+            hideTabBar = false
         }
         .alert("Error", isPresented: $cartViewModel.showError) {
             Button("OK") {
@@ -461,7 +465,7 @@ struct OrderCompleteView: View {
 
 #Preview {
     NavigationStack {
-        CheckoutView()
+        CheckoutView(hideTabBar: .constant(true))
             .environmentObject(CartViewModel())
     }
 }

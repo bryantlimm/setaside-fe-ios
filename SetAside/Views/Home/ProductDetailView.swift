@@ -227,7 +227,7 @@ struct ProductDetailView: View {
                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: -4)
             }
             .navigationDestination(isPresented: $navigateToCheckout) {
-                CheckoutView()
+                CheckoutView(hideTabBar: .constant(true))
                     .onDisappear {
                         dismiss()
                     }

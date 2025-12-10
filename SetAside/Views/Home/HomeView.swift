@@ -51,14 +51,16 @@ struct HomeView: View {
                 .ignoresSafeArea(edges: .top)
             }
             .navigationDestination(isPresented: $showCart) {
-                CartView()
-                    .onAppear { hideTabBar = true }
-                    .onDisappear { hideTabBar = false }
+                NavigationStack {
+                    CartView(hideTabBar: $hideTabBar)
+                        .onAppear { hideTabBar = true }
+                        .onDisappear { hideTabBar = false }
+                }
             }
             .navigationDestination(isPresented: $showCheckout) {
-                CheckoutView()
-                    .onAppear { hideTabBar = true }
-                    .onDisappear { hideTabBar = false }
+                CheckoutView(hideTabBar: $hideTabBar)
+                    //.onAppear { hideTabBar = true }
+                    //.onDisappear { hideTabBar = false }
             }
             .sheet(item: $selectedProduct) { product in
                 ProductDetailView(product: product)

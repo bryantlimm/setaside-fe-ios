@@ -13,7 +13,7 @@ struct CartView: View {
     
     @State private var showCheckout = false
     
-    init(hideTabBar: Binding<Bool> = .constant(true)) {
+    init(hideTabBar: Binding<Bool>) {
         self._hideTabBar = hideTabBar
     }
     
@@ -136,9 +136,7 @@ struct CartView: View {
             }
         }
         .navigationDestination(isPresented: $showCheckout) {
-            CheckoutView()
-                .onAppear { hideTabBar = true }
-                .onDisappear { hideTabBar = false }
+            CheckoutView(hideTabBar: $hideTabBar)
         }
         .onChange(of: showCheckout) { _, isShowing in
             if !isShowing && cartViewModel.isEmpty {
@@ -241,7 +239,7 @@ struct CartItemRow: View {
 
 #Preview {
     NavigationStack {
-        CartView()
+        CartView(hideTabBar: .constant(true))
             .environmentObject(CartViewModel())
     }
 }
