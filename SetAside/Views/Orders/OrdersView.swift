@@ -184,8 +184,10 @@ struct CustomerOrderCard: View {
     // Simplified status for customer
     var customerStatus: (text: String, color: Color, icon: String) {
         switch order.status {
-        case "pending", "preparing":
+        case "pending":
             return ("Waiting for your order", .orange, "clock.fill")
+        case "preparing":
+            return ("Preparing your order", .blue, "clock.fill")
         case "ready":
             return ("Ready for Pickup!", .green, "checkmark.circle.fill")
         case "pickedup", "completed":

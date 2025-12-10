@@ -26,7 +26,7 @@ struct OrderDetailView: View {
         case .pending: return .orange
         case .preparing: return .blue
         case .ready: return .green
-        case .pickedUp: return .gray
+        case .pickedUp, .completed: return .gray
         }
     }
     
@@ -161,7 +161,7 @@ struct OrderDetailView: View {
             return "Your order is being prepared"
         case .ready:
             return "Your order is ready for pickup!"
-        case .pickedUp:
+        case .pickedUp, .completed:
             return "Order completed"
         }
     }
@@ -182,7 +182,7 @@ struct OrderDetailView: View {
         case .pending: return 0
         case .preparing: return 1
         case .ready: return 2
-        case .pickedUp: return 3
+        case .pickedUp, .completed: return 3
         }
     }
     
@@ -201,8 +201,8 @@ struct OrderDetailView: View {
             
             // Payment Method
             HStack {
-                Image(systemName: displayOrder.status == "pickedup" ? "checkmark.circle.fill" : "banknote.fill")
-                    .foregroundColor(displayOrder.status == "pickedup" ? .green : .blue)
+                Image(systemName: (displayOrder.status == "pickedup" || displayOrder.status == "completed") ? "checkmark.circle.fill" : "banknote.fill")
+                    .foregroundColor((displayOrder.status == "pickedup" || displayOrder.status == "completed") ? .green : .blue)
                     .frame(width: 24)
                 
                 Text("Payment")
@@ -211,10 +211,10 @@ struct OrderDetailView: View {
                 
                 Spacer()
                 
-                Text(displayOrder.status == "pickedup" ? "Paid" : "Pay at Pickup")
+                Text((displayOrder.status == "pickedup" || displayOrder.status == "completed") ? "Paid" : "Pay at Pickup")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundColor(displayOrder.status == "pickedup" ? .green : .blue)
+                    .foregroundColor((displayOrder.status == "pickedup" || displayOrder.status == "completed") ? .green : .blue)
             }
             
             // Pickup Time

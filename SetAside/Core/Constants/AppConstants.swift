@@ -20,6 +20,7 @@ enum AppConstants {
         case preparing = "preparing"
         case ready = "ready"
         case pickedUp = "pickedup"
+        case completed = "completed"
         
         var displayName: String {
             switch self {
@@ -27,6 +28,7 @@ enum AppConstants {
             case .preparing: return "Preparing"
             case .ready: return "Ready for Pickup"
             case .pickedUp: return "Picked Up"
+            case .completed: return "Picked Up"
             }
         }
         
@@ -36,6 +38,7 @@ enum AppConstants {
             case .preparing: return "flame.fill"
             case .ready: return "checkmark.circle.fill"
             case .pickedUp: return "bag.fill"
+            case .completed: return "bag.fill"
             }
         }
     }
